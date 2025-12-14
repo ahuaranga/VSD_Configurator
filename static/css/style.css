@@ -140,7 +140,7 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
     flex-direction: column;
     gap: 10px;
     margin-bottom: 20px;
-    align-items: flex-start; /* Alineado a la izquierda */
+    align-items: flex-start;
 }
 
 /* Barra de Selección: Ajuste de ancho */
@@ -153,7 +153,7 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
     background-color: #e0e0e0; /* Color neutro */
     color: #000;
     font-weight: 600;
-    padding: 8px 15px;
+    padding: 0 15px;
     border: 1px solid #aaa;
     border-right: none;
     border-radius: 4px 0 0 4px;
@@ -180,17 +180,23 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
     border-color: var(--highlight-blue);
 }
 
-/* Botones estándar */
+/* Botones estándar (Fixed Height 36px) */
 .btn-standard {
     background-color: #e0e0e0;
     border: 1px solid #999;
-    padding: 6px 20px;
+    height: 36px; /* Altura forzada para igualar selector */
+    padding: 0 15px; /* Padding solo horizontal */
     font-size: 13px;
     font-weight: 600;
     color: #333;
     cursor: pointer;
     border-radius: 2px;
     transition: background 0.2s;
+    
+    /* Centrado Flexbox */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-standard:hover {
@@ -204,7 +210,7 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
 }
 
 .btn-standard:disabled {
-    color: #a0a0a0;
+    color: #a0a0a0 !important; /* Forzar gris si deshabilitado */
     background-color: #f4f4f4;
     border-color: #d0d0d0;
     cursor: not-allowed;

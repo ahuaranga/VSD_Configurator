@@ -289,35 +289,46 @@
                 <div id="view-chart-module" class="view-section" style="display: none;">
                     
                     <div class="chart-top-section">
-                        <div class="chart-selection-bar">
-                            <span class="chart-label">Variable</span>
-                            <select id="chart-var-select" class="chart-select">
-                                <optgroup label="Power Input">
-                                    <option value="vsd_supply_voltage">2103 Supply Voltage</option>
-                                </optgroup>
-                                <optgroup label="Diagnostics">
-                                    <option value="vsd_temperature">2102 Temperature</option>
-                                </optgroup>
-                            </select>
-                        </div>
+                        <div style="display: flex; gap: 20px; align-items: flex-end;">
+                            
+                            <div class="chart-selection-bar">
+                                <span class="chart-label">Variable</span>
+                                <select id="chart-var-select" class="chart-select">
+                                    <optgroup label="Power Input">
+                                        <option value="vsd_supply_voltage">2103 Supply Voltage</option>
+                                    </optgroup>
+                                    <optgroup label="Diagnostics">
+                                        <option value="vsd_temperature">2102 Temperature</option>
+                                    </optgroup>
+                                </select>
+                            </div>
 
-                        <div style="display: flex; gap: 10px;">
-                            <button class="btn-standard" onclick="addVariableToChart()">Add Variable</button>
-                            <button id="btn-remove-var" class="btn-standard" onclick="removeVariableFromChart()" disabled>Remove Variable</button>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn-standard" onclick="addVariableToChart()">Add Variable</button>
+                                <button id="btn-remove-var" class="btn-standard" onclick="removeVariableFromChart()" disabled>Remove Variable</button>
+                            </div>
+
+                            <div style="width: 1px; height: 30px; background: #ccc; margin: 0 5px;"></div>
+
+                            <div style="display: flex; gap: 10px;">
+                                <button id="btn-chart-start" class="btn-standard" onclick="startChart()" disabled style="font-weight: 900; color: #006400;">
+                                    ▶ Start
+                                </button>
+                                <button id="btn-chart-stop" class="btn-standard" onclick="stopChart()" disabled style="font-weight: 900; color: #8b0000;">
+                                    ■ Stop
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     <div class="chart-main-layout">
-                        
                         <div class="added-vars-box">
                             <ul id="chart-added-list" class="simple-list">
                                 </ul>
                         </div>
-
                         <div class="chart-container">
                             <canvas id="realtimeChart"></canvas>
                         </div>
-
                     </div>
                 </div>
 
@@ -350,12 +361,7 @@
             <fieldset class="group-box modal-fieldset">
                 <legend>Parámetros de Comunicación</legend>
                 <div id="conn-settings-form">
-                    <div class="form-row">
-                        <label>Port:</label>
-                        <select id="serial-port" class="full-width-select" style="font-weight: bold;">
-                            <option value="" disabled selected>Buscando...</option>
-                        </select>
-                    </div>
+                    <div class="form-row"><label>Port:</label><select id="serial-port" class="full-width-select" style="font-weight: bold;"><option value="" disabled selected>Buscando...</option></select></div>
                     <div class="form-row"><label>Baud Rate:</label><select id="serial-baud" class="full-width-select"><option value="19200" selected>19200</option><option value="9600">9600</option><option value="38400">38400</option></select></div>
                     <div class="form-row"><label>Data Bits:</label><select id="serial-databits" class="full-width-select"><option value="8">8</option><option value="7">7</option></select></div>
                     <div class="form-row"><label>Parity:</label><select id="serial-parity" class="full-width-select"><option value="N" selected>None (N)</option><option value="E">Even (E)</option><option value="O">Odd (O)</option></select></div>
