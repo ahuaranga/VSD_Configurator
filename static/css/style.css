@@ -101,12 +101,12 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
 .modal-btn:hover { background: #8ec0f8; }
 .modal-btn:active { transform: translateY(1px); }
 
-/* NUEVO: PANEL CENTRAL DE ESTADO */
+/* PANEL CENTRAL DE ESTADO */
 .center-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.2); 
     display: flex; justify-content: center; align-items: center;
-    z-index: 3000; /* Por encima de todo */
+    z-index: 3000;
 }
 
 .status-box {
@@ -129,3 +129,138 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
 /* RESPONSIVE */
 @media (max-width: 1024px) { .sidebar-main, .sidebar-sub { position: absolute; top: 0; bottom: 0; left: 0; box-shadow: 4px 0 10px rgba(0,0,0,0.2); } .sidebar-sub { z-index: 102; left: 0; } .sidebar-main { z-index: 101; } }
 @media (max-width: 768px) { .columns-container { grid-template-columns: 1fr; } .status-bar .user-id { display: none; } .left-toolbar { width: 65px; } }
+
+/* =========================================
+   ESTILOS VISTA GRAFICADOR (Chart Module)
+   ========================================= */
+
+/* Sección Superior: Controles */
+.chart-top-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: flex-start; /* Alineado a la izquierda */
+}
+
+/* Barra de Selección: Ajuste de ancho */
+.chart-selection-bar {
+    display: inline-flex;
+    align-items: center;
+}
+
+.chart-label {
+    background-color: #e0e0e0; /* Color neutro */
+    color: #000;
+    font-weight: 600;
+    padding: 8px 15px;
+    border: 1px solid #aaa;
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+    font-size: 14px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+}
+
+/* Selector reducido */
+.chart-select {
+    border: 1px solid #aaa;
+    border-radius: 0 4px 4px 0;
+    padding: 0 10px;
+    height: 36px;
+    font-size: 14px;
+    width: 220px; /* Ancho fijo reducido */
+    background-color: white;
+    outline: none;
+    font-weight: normal;
+}
+
+.chart-select:focus {
+    border-color: var(--highlight-blue);
+}
+
+/* Botones estándar */
+.btn-standard {
+    background-color: #e0e0e0;
+    border: 1px solid #999;
+    padding: 6px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s;
+}
+
+.btn-standard:hover {
+    background-color: #d0d0d0;
+    border-color: #666;
+}
+
+.btn-standard:active {
+    background-color: #ccc;
+    transform: translateY(1px);
+}
+
+.btn-standard:disabled {
+    color: #a0a0a0;
+    background-color: #f4f4f4;
+    border-color: #d0d0d0;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* --- LAYOUT PRINCIPAL: LISTA + GRÁFICO --- */
+.chart-main-layout {
+    display: flex;
+    gap: 20px;
+    height: calc(100vh - 250px); /* Altura dinámica */
+    align-items: flex-start;
+}
+
+/* Lista a la izquierda */
+.added-vars-box {
+    background-color: #ffffff;
+    border: 1px solid #7a9cc6;
+    width: 300px;
+    height: 100%;
+    overflow-y: auto;
+    padding: 5px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+    flex-shrink: 0;
+}
+
+.simple-list { list-style: none; padding: 0; margin: 0; }
+.simple-list li {
+    padding: 8px;
+    font-size: 14px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #000;
+    cursor: pointer;
+}
+/* Selección Color CYAN (#6cf) */
+.simple-list li.selected {
+    background-color: var(--active-row-bg) !important;
+    color: #000;
+    font-weight: bold;
+}
+
+/* Contenedor del Gráfico */
+.chart-container {
+    flex: 1; /* Ocupa el resto */
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    position: relative;
+}
+
+canvas {
+    max-width: 100%;
+    max-height: 100%;
+}

@@ -2,14 +2,15 @@
 // 0. MAPA DE VINCULACIÓN Y VARIABLES GLOBALES
 // =========================================================
 const TAG_MAP = {
-    // Clave (Sufijo HTML id="val-xxx") : Valor (ID en modbus_map.py)
+    // Clave (Sufijo HTML id="val-xxx" o value del select) : Valor (Clave en modbus_map.py)
     
-    'overcurrent': 'vsd_ol_setpoint_0',   // Registro 717
-    'undercurrent': 'vsd_ul_setpoint',    // Registro 751
+    // --- GRUPO 1: ALARMAS ---
+    'overcurrent': 'vsd_ol_setpoint_0',   // Reg 717
+    'undercurrent': 'vsd_ul_setpoint',    // Reg 751
     
-    // --- NUEVOS REGISTROS DE VOLTAJE ---
-    'voltage-high': 'vsd_vh_setpoint',    // Reg 800 (Placeholder)
-    'voltage-low': 'vsd_vl_setpoint'      // Reg 801 (Placeholder)
+    // --- GRUPO 2: MONITORIZACIÓN (Graficador) ---
+    'vsd_supply_voltage': 'vsd_supply_voltage', // Reg 2103
+    'vsd_temperature': 'vsd_temperature'        // Reg 2102
 };
 
 // Configuración por defecto: 19200, 8, N, 1, 1
@@ -466,7 +467,7 @@ function setTopLed(isConnected) {
 }
 
 // =========================================================
-// 4. SISTEMA DE MENÚ
+// 4. SISTEMA DE MENÚ Y NAVEGACIÓN
 // =========================================================
 function toggleMenuSystem() { isMenuOpen = !isMenuOpen; updateMenuVisibility(); }
 
@@ -483,11 +484,74 @@ function downloadConfig() {
     alert("Funcionalidad de descarga de reporte en desarrollo.");
 }
 
-// --- NUEVA FUNCIÓN PARA EL BOTÓN DE CHARTS ---
+// --- FUNCIÓN PARA EL BOTÓN DE CHARTS (MORADO) ---
+let myChart = null; // Instancia global del gráfico
+
+// Inicializa el gráfico al cargar la página (o al abrir el módulo)
+function initChart() {
+    const ctx = document.getElementById('realtimeChart').getContext('2d');
+    
+    // Si ya existe, lo destruimos para limpiar
+    if (myChart) myChart.destroy();
+
+    myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [], // Eje X (Tiempo)
+            datasets: [] // Variables agregadas
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false, // Desactivar animación para rendimiento real-time
+            scales: {
+                x: { display: true, title: { display: true, text: 'Time (s)' } },
+                y: { display: true, title: { display: true, text: 'Value' } }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom', // LEYENDA EN LA PARTE INFERIOR
+                    labels: { boxWidth: 12, font: { size: 12 } }
+                }
+            }
+        }
+    });
+}
+
+// Generador de color aleatorio para las líneas
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
 function openChartModule() {
-    // Aquí implementaremos la lógica para abrir el panel de gráficas
-    alert("Módulo de Gráficas (Trends) en construcción.");
-    console.log("Abriendo módulo de gráficas...");
+    // 1. Ocultar todas las secciones actuales
+    document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
+
+    // 2. Mostrar la sección del graficador
+    const target = document.getElementById('view-chart-module');
+    if(target) {
+        target.style.display = 'block';
+    }
+
+    // 3. Actualizar Breadcrumb
+    const breadcrumb = document.getElementById('breadcrumb');
+    if(breadcrumb) breadcrumb.innerText = "> VSD > Speed"; 
+
+    // 4. Resetear visualmente el menú lateral
+    isMenuOpen = false;
+    updateMenuVisibility();
+    
+    if(mainList) Array.from(mainList.children).forEach(el => el.classList.remove('selected'));
+    if(subList) Array.from(subList.children).forEach(el => el.classList.remove('selected'));
+    
+    // 5. Inicializar el gráfico (con un pequeño retardo para asegurar que el DOM está listo)
+    setTimeout(initChart, 100);
 }
 
 function updateMenuVisibility() {
@@ -580,3 +644,87 @@ function init() {
 }
 
 init();
+
+// =========================================================
+// LOGICA DEL GRAFICADOR (Add / Remove / Select / Chart.js)
+// =========================================================
+
+function addVariableToChart() {
+    const select = document.getElementById('chart-var-select');
+    const list = document.getElementById('chart-added-list');
+    
+    const selectedText = select.options[select.selectedIndex].text;
+    const selectedValue = select.value;
+
+    // Evitar duplicados
+    const existingItems = Array.from(list.children).map(li => li.dataset.value);
+    if (existingItems.includes(selectedValue)) {
+        alert("Esta variable ya está agregada a la lista.");
+        return;
+    }
+
+    // 1. Agregar a la LISTA UI
+    const li = document.createElement('li');
+    li.dataset.value = selectedValue; 
+    li.innerText = `${selectedText} (1 s)`; 
+    li.onclick = function() { selectChartItem(this); };
+    list.appendChild(li);
+
+    // 2. Agregar al GRÁFICO
+    if (!myChart) initChart();
+
+    const newDataset = {
+        label: selectedText, // Nombre en la leyenda
+        data: [], // Aquí irán los datos reales luego
+        borderColor: getRandomColor(),
+        borderWidth: 2,
+        fill: false,
+        pointRadius: 0
+    };
+
+    myChart.data.datasets.push(newDataset);
+    myChart.update();
+}
+
+// Función para marcar en CYAN (Select) y activar el botón de borrar
+function selectChartItem(element) {
+    const list = document.getElementById('chart-added-list');
+    const btnRemove = document.getElementById('btn-remove-var');
+
+    // 1. Deseleccionar todos los demás items
+    Array.from(list.children).forEach(child => child.classList.remove('selected'));
+
+    // 2. Seleccionar el actual (El CSS global 'li.selected' lo pone CYAN automáticamente)
+    element.classList.add('selected');
+
+    // 3. Activar el botón de remover
+    btnRemove.disabled = false;
+}
+
+// Función para borrar el item seleccionado
+function removeVariableFromChart() {
+    const list = document.getElementById('chart-added-list');
+    const btnRemove = document.getElementById('btn-remove-var');
+    const selectedItem = list.querySelector('.selected');
+    
+    if (selectedItem) {
+        const valToRemove = selectedItem.dataset.value;
+        const textToRemove = selectedItem.innerText.split(' (')[0]; // Extraer nombre base
+
+        // 1. Remover de la lista UI
+        list.removeChild(selectedItem);
+        
+        // 2. Remover del Gráfico
+        if (myChart) {
+            // Buscamos el dataset que coincida con la etiqueta
+            const datasetIndex = myChart.data.datasets.findIndex(ds => ds.label === textToRemove);
+            if (datasetIndex !== -1) {
+                myChart.data.datasets.splice(datasetIndex, 1);
+                myChart.update();
+            }
+        }
+        
+        // Volver a desactivar el botón porque ya no hay selección
+        btnRemove.disabled = true;
+    }
+}
