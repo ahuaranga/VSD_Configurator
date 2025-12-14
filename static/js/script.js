@@ -2,10 +2,14 @@
 // 0. MAPA DE VINCULACIÓN Y VARIABLES GLOBALES
 // =========================================================
 const TAG_MAP = {
-    // Sufijo HTML (id="val-xxx") : ID en modbus_map.py
+    // Clave (Sufijo HTML id="val-xxx") : Valor (ID en modbus_map.py)
     
     'overcurrent': 'vsd_ol_setpoint_0',   // Registro 717
-    'undercurrent': 'vsd_ul_setpoint',    // Registro 751 (NUEVO)
+    'undercurrent': 'vsd_ul_setpoint',    // Registro 751
+    
+    // --- NUEVOS REGISTROS DE VOLTAJE ---
+    'voltage-high': 'vsd_vh_setpoint',    // Reg 800 (Placeholder)
+    'voltage-low': 'vsd_vl_setpoint'      // Reg 801 (Placeholder)
 };
 
 // Configuración por defecto: 19200, 8, N, 1, 1
@@ -40,6 +44,7 @@ const menuData = [
     { id: 8, name: "Controller", subItems: [] }
 ];
 
+// Referencias DOM Globales
 const mainMenu = document.getElementById('mainMenu');
 const subMenu = document.getElementById('subMenu');
 const mainList = document.getElementById('mainList');
@@ -64,6 +69,7 @@ document.addEventListener('keydown', (e) => {
     
     if (isMenuOpen || currentViewRows.length === 0 || alarmOpen || configOpen || statusOpen) return;
     
+    // Evitar scroll con flechas
     if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) e.preventDefault();
 
     if (e.key === 'ArrowDown') moveFocus(1);
@@ -137,33 +143,48 @@ function jumpBlock(direction) {
 }
 
 // =========================================================
-// 2. MODAL ALARMAS (Lectura/Escritura Real)
+// 2. MODAL ALARMAS (Lectura/Escritura Real + Lógica UI)
 // =========================================================
 function openAlarmModal(idSuffix, titleText) {
     currentEditingId = idSuffix;
     document.getElementById('modal-title').innerText = titleText || "Configuración";
 
-    // Lógica visual específica (Overcurrent vs Undercurrent)
-    const maintRow = document.getElementById('row-maint-bypass');
-    const btnCurve = document.getElementById('btn-edit-curve');
+    // Referencias a elementos condicionales del modal
+    const maintRow = document.getElementById('row-maint-bypass'); // Fila 7
+    const startRow = document.getElementById('row-start-bypass'); // Fila 6
+    const btnCurve = document.getElementById('btn-edit-curve');   // Botón Curva
 
+    // 1. Resetear visibilidad por defecto (Estado Standard)
+    if(maintRow) maintRow.style.display = 'none';
+    if(startRow) startRow.style.display = 'flex'; // Visible por defecto
+    if(btnCurve) btnCurve.style.display = 'block'; // Visible por defecto
+
+    // 2. Lógica específica por tipo de alarma
     if (idSuffix === 'undercurrent') {
-        maintRow.style.display = 'flex';
-        btnCurve.style.display = 'none';
-    } else {
-        maintRow.style.display = 'none';
-        btnCurve.style.display = 'block';
+        // Undercurrent: Muestra Maint Bypass, Oculta botón curva
+        if(maintRow) maintRow.style.display = 'flex';
+        if(btnCurve) btnCurve.style.display = 'none';
+        
+    } else if (idSuffix.includes('voltage')) {
+        // Voltage (High/Low): Oculta fila 6 "Start Bypass" y botón de curva
+        if(startRow) startRow.style.display = 'none'; 
+        if(btnCurve) btnCurve.style.display = 'none';
     }
 
-    // Cargar valor actual del DOM al Input del Modal
-    const currentVal = document.getElementById('val-' + idSuffix).innerText;
-    const currentAct = document.getElementById('act-' + idSuffix).innerText;
-    document.getElementById('modal-setpoint').value = currentVal;
+    // 3. Cargar valores actuales del DOM al Modal
+    const valEl = document.getElementById('val-' + idSuffix);
+    const actEl = document.getElementById('act-' + idSuffix);
+
+    if(valEl) document.getElementById('modal-setpoint').value = valEl.innerText;
     
+    // Seleccionar la acción en el combobox
     const select = document.getElementById('modal-action');
-    for(let i=0; i<select.options.length; i++) {
-        if(select.options[i].value === currentAct) {
-            select.selectedIndex = i; break;
+    if(actEl) {
+        const currentAct = actEl.innerText;
+        for(let i=0; i<select.options.length; i++) {
+            if(select.options[i].value === currentAct) {
+                select.selectedIndex = i; break;
+            }
         }
     }
     
@@ -200,8 +221,11 @@ function saveAlarmChanges() {
         .then(data => {
             if(data.status === 'success') {
                 // Actualizar UI
-                document.getElementById('val-' + currentEditingId).innerText = newSetpoint;
-                document.getElementById('act-' + currentEditingId).innerText = selectedAction;
+                const valEl = document.getElementById('val-' + currentEditingId);
+                const actEl = document.getElementById('act-' + currentEditingId);
+                if(valEl) valEl.innerText = newSetpoint;
+                if(actEl) actEl.innerText = selectedAction;
+                
                 alert("Valor guardado correctamente.");
                 closeAlarmModal();
             } else {
@@ -212,8 +236,11 @@ function saveAlarmChanges() {
 
     } else {
         // --- MODO OFFLINE ---
-        document.getElementById('val-' + currentEditingId).innerText = newSetpoint;
-        document.getElementById('act-' + currentEditingId).innerText = selectedAction;
+        const valEl = document.getElementById('val-' + currentEditingId);
+        const actEl = document.getElementById('act-' + currentEditingId);
+        if(valEl) valEl.innerText = newSetpoint;
+        if(actEl) actEl.innerText = selectedAction;
+        
         closeAlarmModal();
         if(!isCommActive) alert("Guardado en pantalla (Sin conexión activa).");
     }
@@ -454,6 +481,13 @@ function goHome() {
 
 function downloadConfig() {
     alert("Funcionalidad de descarga de reporte en desarrollo.");
+}
+
+// --- NUEVA FUNCIÓN PARA EL BOTÓN DE CHARTS ---
+function openChartModule() {
+    // Aquí implementaremos la lógica para abrir el panel de gráficas
+    alert("Módulo de Gráficas (Trends) en construcción.");
+    console.log("Abriendo módulo de gráficas...");
 }
 
 function updateMenuVisibility() {

@@ -13,46 +13,16 @@
     <aside class="left-toolbar">
         <div class="toolbar-group top">
             <div class="hmi-btn home-btn" onclick="goHome()" title="Ir a Inicio">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="#1a2d4c">
-                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-                </svg>
+                 <svg width="32" height="32" viewBox="0 0 24 24" fill="#1a2d4c"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             </div>
+            
             <div class="hmi-btn download-btn" onclick="downloadConfig()" title="Descargar Configuración">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#1a2d4c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#1a2d4c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </div>
-
-            <!--
-            <div class="hmi-btn config-btn" onclick="openConfigModal()" title="Configurar Puerto">
-                <svg width="30" height="30" 
-                    viewBox="0 0 24 24" fill="none" stroke="#1a2d4c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="2" width="4" height="8" rx="1" />
-                    <rect x="17" y="2" width="4" height="8" rx="1" />
-                    <path d="M5 10v4a7 7 0 0 0 14 0v-4" />
-                    <line x1="5" y1="5" x2="5" y2="7" />
-                    <line x1="19" y1="5" x2="19" y2="7" />
-                </svg>
-            </div>
-
-            -->
 
             <div class="hmi-btn config-btn" onclick="openConfigModal()" title="Configurar Puerto">
-                <svg xmlns="http://www.w3.org/2000/svg"
-                    width="30" height="30"
-                    viewBox="0 0 514 520"
-                    fill="currentColor"
-                    preserveAspectRatio="xMidYMid meet"
-                    style="display:block"
-                    aria-hidden="true">
-                    <path d="M 286 85 L 203 168 L 177 207 L 163 235 L 160 245 L 154 249 L 146 259 L 145 272 L 148 280 L 97 331 L 121 355 L 121 357 L 0 477 L 0 491 L 26 517 L 154 389 L 179 412 L 228 362 L 242 369 L 254 368 L 263 362 L 268 353 L 296 343 L 319 331 L 339 318 L 354 306 L 430 230 Z M 407 1 L 317 91 L 328 102 L 329 102 L 344 117 L 344 118 L 423 197 L 425 197 L 442 180 L 442 179 L 459 162 L 460 162 L 465 157 L 465 156 L 475 146 L 476 146 L 477 145 L 477 144 L 513 108 L 465 60 L 465 59 L 419 14 L 419 13 Z M 454 86 L 456 86 L 477 107 L 477 109 L 461 125 L 460 125 L 438 103 L 438 102 Z M 404 34 L 426 56 L 426 57 L 410 73 L 408 73 L 388 53 L 388 52 L 387 51 L 387 50 L 394 43 L 395 43 L 396 42 L 396 41 L 402 35 L 403 35 Z"
-                    fill-rule="evenodd"/>
-                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 514 520" fill="currentColor" preserveAspectRatio="xMidYMid meet" style="display:block" aria-hidden="true"><path d="M 286 85 L 203 168 L 177 207 L 163 235 L 160 245 L 154 249 L 146 259 L 145 272 L 148 280 L 97 331 L 121 355 L 121 357 L 0 477 L 0 491 L 26 517 L 154 389 L 179 412 L 228 362 L 242 369 L 254 368 L 263 362 L 268 353 L 296 343 L 319 331 L 339 318 L 354 306 L 430 230 Z M 407 1 L 317 91 L 328 102 L 329 102 L 344 117 L 344 118 L 423 197 L 425 197 L 442 180 L 442 179 L 459 162 L 460 162 L 465 157 L 465 156 L 475 146 L 476 146 L 477 145 L 477 144 L 513 108 L 465 60 L 465 59 L 419 14 L 419 13 Z M 454 86 L 456 86 L 477 107 L 477 109 L 461 125 L 460 125 L 438 103 L 438 102 Z M 404 34 L 426 56 L 426 57 L 410 73 L 408 73 L 388 53 L 388 52 L 387 51 L 387 50 L 394 43 L 395 43 L 396 42 L 396 41 L 402 35 L 403 35 Z" fill-rule="evenodd"/></svg>
             </div>
-
-
 
             <div class="hmi-btn start-btn" onclick="startCommunication()" title="Iniciar Comunicación">
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -67,7 +37,15 @@
                     <path d="M4 12h5"/> <path d="M15 12h5"/> <path d="M10 8l4 8"/> <path d="M14 8l-4 8"/>
                 </svg>
             </div>
-        </div>
+
+            <div class="hmi-btn chart-btn" onclick="openChartModule()" title="Abrir Graficador">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#673ab7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 20h18" />
+                    <path d="M3 4v16" />
+                    <path d="M3 15l5-5 5 5 8-8" />
+                </svg>
+            </div>
+            </div>
 
         <div class="toolbar-group bottom">
             <div class="hmi-btn text-icon-btn" title="Función PM">PM</div>
@@ -167,7 +145,7 @@
                 </div>
 
                 <div id="view-time" class="view-section" style="display: none;">
-                    <div class="columns-container">
+                   <div class="columns-container">
                         <fieldset class="group-box"><legend>Accel/Decel</legend>
                             <div class="form-row highlight-cyan"><label>1 Accel Rate (Hz/s):</label><input type="number" value="9"></div>
                             <div class="form-row"><label>2 Decel Rate (Hz/s):</label><input type="number" value="3"></div>
@@ -214,8 +192,12 @@
                         </div>
                         <div class="stack-container">
                             <fieldset class="group-box"><legend>Voltage Input</legend>
-                                <div class="form-row"><label>Voltage Input High (V):</label><span>470</span><span class="bypass-text">Bypass</span></div>
-                                <div class="form-row"><label>Voltage Input Low (V):</label><span>450</span><span class="bypass-text">Bypass</span></div>
+                                <div class="form-row" id="row-voltage-high" ondblclick="openAlarmModal('voltage-high', 'Voltage Input High (V)')">
+                                    <label>Voltage Input High (V):</label><span id="val-voltage-high">470</span><span id="act-voltage-high" class="bypass-text">Bypass</span>
+                                </div>
+                                <div class="form-row" id="row-voltage-low" ondblclick="openAlarmModal('voltage-low', 'Voltage Input Low (V)')">
+                                    <label>Voltage Input Low (V):</label><span id="val-voltage-low">450</span><span id="act-voltage-low" class="bypass-text">Bypass</span>
+                                </div>
                             </fieldset>
                             <fieldset class="group-box"><legend>VSD Warning</legend>
                                 <div class="form-row"><label>Action:</label><select class="blue-select"><option value="Bypass">1: Bypass</option><option value="Log">2: Log</option></select></div>
@@ -234,7 +216,7 @@
                 </div>
 
                 <div id="view-expert" class="view-section" style="display: none;">
-                    <div class="columns-container">
+                   <div class="columns-container">
                         <div class="stack-container">
                             <fieldset class="group-box"><legend>Troubleshooting</legend>
                                 <div class="form-row highlight-cyan" style="justify-content: space-between;"><label>1 Trip on Comms loss is Enabled</label><button class="btn-gray">Disable</button></div>
@@ -316,7 +298,7 @@
                 <div class="form-row"><label>3 Trip Time (s):</label><input type="number" value="16"></div>
                 <div class="form-row"><label>4 Restarts:</label><input type="number" value="0"></div>
                 <div class="form-row"><label>5 Restart Delay (min):</label><input type="number" value="30"></div>
-                <div class="form-row"><label>6 Start Bypass (s):</label><input type="number" value="0"></div>
+                <div class="form-row" id="row-start-bypass"><label>6 Start Bypass (s):</label><input type="number" value="0"></div>
                 <div class="form-row" id="row-maint-bypass" style="display: none;"><label>7 Maint. Bypass (min):</label><input type="number" value="0"></div>
                 <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
                     <button id="btn-edit-curve" class="modal-btn">7 Edit curve...</button>
@@ -328,7 +310,7 @@
     </div>
 
     <div id="config-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-window">
+       <div class="modal-window">
             <fieldset class="group-box modal-fieldset">
                 <legend>Parámetros de Comunicación</legend>
                 <div id="conn-settings-form">
