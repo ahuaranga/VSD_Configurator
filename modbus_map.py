@@ -1,13 +1,9 @@
 # modbus_map.py
-# Diccionario maestro de registros Modbus
 
 REGISTER_MAP = {
     # ==========================================
-    # GRUPO 1: ALARMAS Y PROTECCIONES
+    # GRUPO 1: ALARMAS (Escritura/Lectura)
     # ==========================================
-
-    # 1. Overcurrent (A)
-    # Nombre Datasheet: VSD OL Setpoint (717)
     "vsd_ol_setpoint_0": {
         "address": 717,
         "type": "uint",
@@ -15,43 +11,53 @@ REGISTER_MAP = {
         "unit": "A",
         "access": "rw"
     },
-
-    # 2. Undercurrent (A)
-    # Nombre Datasheet: VSD UL Setpoint (751)
-    # UI Label: "2 Undercurrent (A)"
     "vsd_ul_setpoint": {
-        "address": 751,  # Dirección Modicon 400752 -> Offset 751
+        "address": 751,
         "type": "uint",
-        "scale": 10,  # Datasheet dice x10 (Raw 200 = 20.0 A)
+        "scale": 10,
         "unit": "A",
         "access": "rw"
     },
 
-
     # ==========================================
-    # GRUPO 2: MONITORIZACIÓN (LECTURA)
+    # GRUPO 2: MONITORIZACIÓN VSD
     # ==========================================
-
-    # 5. Supply Voltage
-    # Nombre Datasheet: SupplyVolts (2103)
-    # UI Label: "2103 Supply Voltage"
     "vsd_supply_voltage": {
-        "address": 2103,  # Modicon 302104 -> Offset 2103
+        "address": 2103,
         "type": "uint",
-        "scale": 1,  # x1
+        "scale": 1,
         "unit": "V",
-        "access": "ro"  # Read Only
+        "access": "ro"
     },
-    # 6. Temperature (NUEVO)
-        # Nombre Datasheet: Temperature (2102)
-        "vsd_temperature": {
-            "address": 2102,  # Offset 2102
-            "type": "int",    # Datasheet dice 'int' (puede ser con signo)
-            "scale": 1,       # x1
-            "unit": "°C",     # Grados Celsius
-            "access": "ro"
-        }
+    "vsd_temperature": {
+        "address": 2102,
+        "type": "int",
+        "scale": 1,
+        "unit": "°C",
+        "access": "ro"
+    },
 
+    # ==========================================
+    # GRUPO 3: DOWN HOLE TOOL (NUEVO)
+    # ==========================================
 
+    # Pressure (x10 -> raw 100 = 10.0)
+    "dht_intake_pressure": {"address": 2136, "type": "uint", "scale": 10, "unit": "psi", "access": "ro"},
+    "dht_discharge_pressure": {"address": 2137, "type": "uint", "scale": 10, "unit": "psi", "access": "ro"},
 
+    # Temperature (x10)
+    "dht_intake_temp": {"address": 2139, "type": "uint", "scale": 10, "unit": "°C", "access": "ro"},
+    "dht_motor_temp": {"address": 2140, "type": "uint", "scale": 10, "unit": "°C", "access": "ro"},
+
+    # Vibration (x1000)
+    "dht_vibration": {"address": 2141, "type": "uint", "scale": 1000, "unit": "g", "access": "ro"},
+
+    # Leakage / Current (x1000)
+    "dht_active_leakage": {"address": 2142, "type": "uint", "scale": 1000, "unit": "mA", "access": "ro"},
+    "dht_cz": {"address": 2144, "type": "uint", "scale": 1000, "unit": "mA", "access": "ro"},
+    "dht_cf": {"address": 2145, "type": "uint", "scale": 1000, "unit": "mA", "access": "ro"},
+    "dht_passive_leakage": {"address": 2147, "type": "uint", "scale": 1000, "unit": "mA", "access": "ro"},
+
+    # Differential Pressure (x1)
+    "dht_diff_pressure": {"address": 2161, "type": "int", "scale": 1, "unit": "psi", "access": "ro"}
 }
