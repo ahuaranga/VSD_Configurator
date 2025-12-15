@@ -183,12 +183,10 @@ function openAlarmModal(idSuffix, titleText) {
     currentEditingId = idSuffix;
     document.getElementById('modal-title').innerText = titleText || "Configuración";
 
-    // Referencias a elementos condicionales del modal
     const maintRow = document.getElementById('row-maint-bypass'); 
     const startRow = document.getElementById('row-start-bypass'); 
     const btnCurve = document.getElementById('btn-edit-curve');   
 
-    // Resetear visibilidad por defecto
     if(maintRow) maintRow.style.display = 'none';
     if(startRow) startRow.style.display = 'flex'; 
     if(btnCurve) btnCurve.style.display = 'block'; 
@@ -215,7 +213,6 @@ function openAlarmModal(idSuffix, titleText) {
             }
         }
     }
-    
     document.getElementById('alarm-modal').style.display = 'flex';
 }
 
@@ -248,7 +245,6 @@ function saveAlarmChanges() {
                 const actEl = document.getElementById('act-' + currentEditingId);
                 if(valEl) valEl.innerText = newSetpoint;
                 if(actEl) actEl.innerText = selectedAction;
-                
                 alert("Valor guardado correctamente.");
                 closeAlarmModal();
             } else {
@@ -262,14 +258,13 @@ function saveAlarmChanges() {
         const actEl = document.getElementById('act-' + currentEditingId);
         if(valEl) valEl.innerText = newSetpoint;
         if(actEl) actEl.innerText = selectedAction;
-        
         closeAlarmModal();
         if(!isCommActive) alert("Guardado en pantalla (Sin conexión activa).");
     }
 }
 
 // =========================================================
-// 3. COMUNICACIÓN Y POLLING (Lógica Principal)
+// 3. COMUNICACIÓN Y POLLING
 // =========================================================
 
 function openConfigModal() {
@@ -288,7 +283,7 @@ function openConfigModal() {
                 portSelect.disabled = false;
                 data.forEach(port => {
                     let opt = new Option(`${port.device} - ${port.description}`, port.device);
-                    if (savedConfig.port === port.device) opt.selected = true; // Recordar selección anterior
+                    if (savedConfig.port === port.device) opt.selected = true;
                     portSelect.add(opt);
                 });
                 if (!savedConfig.port) portSelect.selectedIndex = 0;
@@ -363,15 +358,10 @@ function startCommunication() {
         if(data.status === 'success') {
             setTopLed(true);
             isCommActive = true;
-            pollErrorCount = 0; // Resetear errores al conectar
-            
+            pollErrorCount = 0; 
             startPolling();
             updateChartButtons();
-
-            setTimeout(() => {
-                statusModal.style.display = 'none';
-            }, 800);
-
+            setTimeout(() => { statusModal.style.display = 'none'; }, 800);
         } else {
             progressBar.style.backgroundColor = '#c62828';
             statusText.innerText = "Fallo en la conexión";
@@ -399,7 +389,7 @@ function closeStatusModal() {
 }
 
 function stopCommunication() {
-    stopPolling(); 
+    stopPolling();
     if(isCharting) stopChart();
 
     fetch('/api/disconnect', { method: 'POST' })
@@ -413,23 +403,18 @@ function stopCommunication() {
     .catch(err => alert("Error al desconectar: " + err));
 }
 
-// --- NUEVA FUNCIÓN: MANEJO DE PÉRDIDA DE CONEXIÓN AUTOMÁTICA ---
 function handleLostConnection() {
     stopPolling();
     if(isCharting) stopChart();
     
-    // Forzamos estado desconectado
     isCommActive = false;
     setTopLed(false);
     updateChartButtons();
     
-    // Avisar al backend para que limpie el puerto (opcional pero bueno)
     fetch('/api/disconnect', { method: 'POST' }).catch(() => {});
-
     alert("ERROR: Conexión perdida con el dispositivo.\nVerifique el cable.");
 }
 
-// --- D. POLLING (LECTURA CONSTANTE) ---
 function startPolling() {
     if (pollingInterval) clearInterval(pollingInterval);
     pollingInterval = setInterval(pollActiveView, 2000);
@@ -461,14 +446,11 @@ function pollActiveView() {
         body: JSON.stringify({ ids: idsToRead })
     })
     .then(r => {
-        // Si el backend devuelve 500 o 400, lanzamos error
         if (!r.ok) throw new Error("Device Unresponsive");
         return r.json();
     })
     .then(data => {
-        pollErrorCount = 0; // Lectura exitosa, reseteamos contador de errores
-        
-        // 3. Actualizar valores en pantalla
+        pollErrorCount = 0; 
         for (const [modbusID, value] of Object.entries(data)) {
             if (value !== null) {
                 const suffix = mapIdToSuffix[modbusID];
@@ -480,14 +462,12 @@ function pollActiveView() {
     .catch(err => {
         console.error("Polling error:", err);
         pollErrorCount++;
-        // Si fallan 3 lecturas seguidas, asumimos desconexión física
         if (pollErrorCount >= 3) {
             handleLostConnection();
         }
     });
 }
 
-// --- E. AUXILIARES ---
 function setTopLed(isConnected) {
     const statusDiv = document.getElementById('top-conn-indicator');
     const statusText = statusDiv.querySelector('.conn-text');
@@ -522,18 +502,16 @@ function downloadConfig() {
 // 5. LOGICA DEL GRAFICADOR (Add / Remove / Select / Chart.js)
 // =========================================================
 
-// --- A. GESTIÓN DEL GRÁFICO ---
 function initChart() {
     const ctx = document.getElementById('realtimeChart').getContext('2d');
     
-    // Si ya existe, lo destruimos para limpiar
     if (myChart) myChart.destroy();
 
     myChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: [], // Eje X (Tiempo)
-            datasets: [] // Variables agregadas
+            labels: [], 
+            datasets: [] 
         },
         options: {
             responsive: true,
@@ -544,21 +522,17 @@ function initChart() {
                 tooltip: { enabled: true, mode: 'index', position: 'nearest' },
                 legend: {
                     display: true,
-                    position: 'bottom', // LEYENDA EN LA PARTE INFERIOR
+                    position: 'bottom', 
                     labels: {
                         boxWidth: 12, 
                         font: { size: 12 },
-                        // Función mágica para mostrar "Valor Actual + Nombre"
                         generateLabels: function(chart) {
                             const datasets = chart.data.datasets;
                             return datasets.map((dataset, i) => {
-                                // Obtener último valor disponible
                                 const lastValue = dataset.data.length > 0 ? dataset.data[dataset.data.length - 1] : '--';
-                                // Obtener unidad del mapa global
                                 const unit = dataset.unit || ''; 
-                                
                                 return {
-                                    text: `${lastValue} ${unit} - ${dataset.origLabel}`, // E.g. "480 V - Supply Voltage"
+                                    text: `${lastValue} ${unit} - ${dataset.origLabel}`,
                                     fillStyle: dataset.borderColor,
                                     strokeStyle: dataset.borderColor,
                                     lineWidth: 2,
@@ -589,8 +563,6 @@ function getRandomColor() {
 
 function openChartModule() {
     const target = document.getElementById('view-chart-module');
-    
-    // CORRECCIÓN BUG: Si ya estamos en la pantalla, no hacer nada (evita reset)
     if (target.style.display === 'block') {
         return; 
     }
@@ -604,23 +576,20 @@ function openChartModule() {
     Array.from(mainList.children).forEach(el => el.classList.remove('selected'));
     Array.from(subList.children).forEach(el => el.classList.remove('selected'));
     
-    // PERSISTENCIA DE GRÁFICO
     if (!myChart) {
         setTimeout(initChart, 100);
     } else {
-        // Redibujar para ajustar tamaño por si cambió el layout
         myChart.resize();
         myChart.update();
     }
-
-    // 3. Actualizar estado de los botones al entrar
-    // VERIFICAR ESTADO DEL BOTÓN CLEAR
+    
+    // Verificar estado botón Clear
     const list = document.getElementById('chart-added-list');
     const btnClear = document.getElementById('btn-clear-vars');
     if (list && btnClear) {
         btnClear.disabled = (list.children.length === 0);
     }
-    
+
     updateChartButtons();
 }
 
@@ -655,12 +624,7 @@ function loadView(viewName) {
         default: document.getElementById('default-title').innerText = viewName;
     }
     showSection(targetId);
-    
-    // Si estamos conectados, forzar lectura inmediata al cambiar pantalla
-    if(isCommActive) {
-        setTimeout(pollActiveView, 100);
-    }
-
+    if(isCommActive) setTimeout(pollActiveView, 100);
     if (window.innerWidth < 1024) { isMenuOpen = false; updateMenuVisibility(); }
 }
 
@@ -699,6 +663,117 @@ function updateClock() {
     document.getElementById('clock').innerText = now.toLocaleString('en-GB');
 }
 
+// =========================================================
+// 6. FUNCIONALIDAD DROPDOWN (Ocultar números al seleccionar)
+// =========================================================
+function initDropdownLogic() {
+    const selects = document.querySelectorAll('select.dynamic-select'); 
+    
+    selects.forEach(sel => {
+        Array.from(sel.options).forEach(opt => {
+            if (!opt.dataset.orig) {
+                opt.dataset.orig = opt.text;
+            }
+        });
+
+        const showNumbers = () => {
+            Array.from(sel.options).forEach(opt => {
+                opt.text = opt.dataset.orig;
+            });
+        };
+
+        const hideNumbers = () => {
+            Array.from(sel.options).forEach(opt => opt.text = opt.dataset.orig);
+            if (sel.selectedIndex !== -1) {
+                const selected = sel.options[sel.selectedIndex];
+                selected.text = selected.text.replace(/^\d+:\s*/, '');
+            }
+        };
+
+        sel.addEventListener('mousedown', showNumbers); 
+        sel.addEventListener('change', hideNumbers);    
+        sel.addEventListener('blur', hideNumbers);      
+
+        hideNumbers();
+    });
+}
+
+// =========================================================
+// 7. FUNCIONALIDAD CAMPO DINÁMICO (Extended Speed Mode)
+// =========================================================
+function toggleExtendedFreq() {
+    const select = document.getElementById('pmm-ext-speed-mode');
+    const row = document.getElementById('row-ext-base-freq');
+    
+    if (select && row) {
+        if (select.value === "1") {
+            row.style.display = 'flex';
+        } else {
+            row.style.display = 'none';
+        }
+    }
+    // IMPORTANTE: Al cambiar esto también validamos si hay que bloquear Configuration
+    updateConfigLocks();
+}
+
+// =========================================================
+// 8. FUNCIONALIDAD BLOQUEO (Motor Setup Mode)
+// =========================================================
+function togglePMMFields() {
+    const modeSelect = document.getElementById('pmm-setup-mode');
+    if (!modeSelect) return;
+
+    const isManual = (modeSelect.value === '2'); 
+    
+    const container = document.getElementById('view-pmm-configure-2');
+    const fieldset = container.querySelector('fieldset.group-box'); 
+
+    const inputs = fieldset.querySelectorAll('input, select');
+
+    inputs.forEach(input => {
+        if (input.id === 'pmm-setup-mode') return;
+        input.disabled = !isManual;
+    });
+
+    // IMPORTANTE: Validar bloqueos cruzados
+    updateConfigLocks();
+}
+
+// =========================================================
+// 9. FUNCIONALIDAD BLOQUEO CRUZADO (Config View)
+// =========================================================
+function updateConfigLocks() {
+    const setupMode = document.getElementById('pmm-setup-mode').value; // 2 = Manual
+    const extMode = document.getElementById('pmm-ext-speed-mode').value; // 1 = Enable
+
+    const transRatio = document.getElementById('cfg-transformer-ratio');
+    const vsdSpeed = document.getElementById('cfg-vsd-speed');
+    const volts = document.getElementById('cfg-base-volts');
+
+    if(!transRatio || !vsdSpeed || !volts) return;
+
+    // Condición: Manual Setup (2) AND Extended Mode Enabled (1)
+    if (setupMode === '2' && extMode === '1') {
+        // Desactivar
+        transRatio.disabled = true;
+        vsdSpeed.disabled = true;
+        volts.disabled = true;
+        // Estilo visual
+        transRatio.classList.add('input-disabled');
+        vsdSpeed.classList.add('input-disabled');
+        volts.classList.add('input-disabled');
+    } else {
+        // Activar (Por defecto)
+        transRatio.disabled = false;
+        vsdSpeed.disabled = false;
+        volts.disabled = false;
+        
+        transRatio.classList.remove('input-disabled');
+        vsdSpeed.classList.remove('input-disabled');
+        volts.classList.remove('input-disabled');
+    }
+}
+
 function init() {
     menuData.forEach((item, index) => {
         let li = document.createElement('li');
@@ -707,7 +782,15 @@ function init() {
         li.onclick = () => handleMainClick(index, li);
         mainList.appendChild(li);
     });
-    setInterval(updateClock, 1000); updateClock(); goHome();
+    setInterval(updateClock, 1000); 
+    updateClock(); 
+    goHome();
+    
+    // INICIALIZAR LÓGICAS DE UI
+    setTimeout(initDropdownLogic, 100); 
+    setTimeout(toggleExtendedFreq, 100); 
+    setTimeout(togglePMMFields, 100); 
+    setTimeout(updateConfigLocks, 100); // Estado inicial de bloqueos cruzados
 }
 
 init();
@@ -722,44 +805,39 @@ function addVariableToChart() {
     if (select.selectedIndex === -1 || !select.value) return;
 
     let selectedOption = select.options[select.selectedIndex];
-    // Eliminar números del texto visible (Regex para limpiar "2103 ")
     let selectedText = selectedOption.text.replace(/^\d+\s+/, ''); 
     const selectedValue = select.value;
 
     const existingItems = Array.from(list.children).map(li => li.dataset.value);
     if (existingItems.includes(selectedValue)) {
-        return alert("Esta variable ya está agregada a la lista.");
+        return alert("Esta variable ya está agregada.");
     }
 
-    // 1. Agregar a la LISTA UI
     const li = document.createElement('li');
     li.dataset.value = selectedValue; 
     li.innerText = `${selectedText} (1 s)`; 
     li.onclick = function() { selectChartItem(this); };
     list.appendChild(li);
 
-    // 2. Ocultar del Dropdown
     selectedOption.disabled = true;
     selectedOption.hidden = true;
     selectedOption.style.display = 'none';
     select.selectedIndex = -1; 
 
-    // Activar botón Clear
     if(btnClear) btnClear.disabled = false;
 
-    // 3. Agregar al GRÁFICO
     if (!myChart) initChart();
 
     const newDataset = {
-        label: selectedText,     // ID interno
-        origLabel: selectedText, // Texto base para leyenda
-        unit: UNIT_MAP[selectedValue] || '', // Unidad
+        label: selectedText,
+        origLabel: selectedText,
+        unit: UNIT_MAP[selectedValue] || '',
         data: [], 
         borderColor: getRandomColor(),
         borderWidth: 2,
         fill: false,
         pointRadius: 0,
-        pointHoverRadius: 5 // Mostrar punto al pasar mouse
+        pointHoverRadius: 5
     };
 
     myChart.data.datasets.push(newDataset);
@@ -769,14 +847,8 @@ function addVariableToChart() {
 function selectChartItem(element) {
     const list = document.getElementById('chart-added-list');
     const btnRemove = document.getElementById('btn-remove-var');
-
-    // 1. Deseleccionar todos los demás items
     Array.from(list.children).forEach(child => child.classList.remove('selected'));
-
-    // 2. Seleccionar el actual (CYAN)
     element.classList.add('selected');
-
-    // 3. Activar el botón de remover
     btnRemove.disabled = false;
 }
 
@@ -789,7 +861,6 @@ function removeVariableFromChart() {
     if (selectedItem) {
         const valToRemove = selectedItem.dataset.value; 
         
-        // 1. Restaurar en dropdown
         const select = document.getElementById('chart-var-select');
         for (let i = 0; i < select.options.length; i++) {
             if (select.options[i].value === valToRemove) {
@@ -800,7 +871,6 @@ function removeVariableFromChart() {
             }
         }
 
-        // 2. Remover del Gráfico
         if (myChart) {
             const textInLi = selectedItem.innerText;
             const textClean = textInLi.replace(' (1 s)', '');
@@ -815,7 +885,6 @@ function removeVariableFromChart() {
         list.removeChild(selectedItem);
         btnRemove.disabled = true;
 
-        // Desactivar Clear si no queda nada
         if (list.children.length === 0 && btnClear) {
             btnClear.disabled = true;
         }
@@ -828,7 +897,6 @@ function clearAllVariables() {
     const btnRemove = document.getElementById('btn-remove-var');
     const btnClear = document.getElementById('btn-clear-vars');
 
-    // 1. Restaurar todas las opciones del Dropdown
     for (let i = 0; i < select.options.length; i++) {
         select.options[i].disabled = false;
         select.options[i].hidden = false;
@@ -836,16 +904,13 @@ function clearAllVariables() {
     }
     select.selectedIndex = -1;
 
-    // 2. Limpiar Lista UI
     list.innerHTML = '';
 
-    // 3. Limpiar Gráfico
     if (myChart) {
         myChart.data.datasets = [];
         myChart.update();
     }
 
-    // 4. Desactivar botones
     btnRemove.disabled = true;
     btnClear.disabled = true;
 }
@@ -859,48 +924,37 @@ function updateChartButtons() {
     if (!btnStart || !btnStop) return; 
 
     if (!isCommActive) {
-        // CASO 1: DESCONECTADO (Todo apagado)
         btnStart.disabled = true;
         btnStop.disabled = true;
     } else {
-        // CASO 2: CONECTADO
         if (isCharting) {
-            // Graficando: Start deshabilitado, Stop habilitado
             btnStart.disabled = true;
             btnStop.disabled = false;
         } else {
-            // En pausa: Start habilitado, Stop deshabilitado
             btnStart.disabled = false;
             btnStop.disabled = true;
         }
     }
 }
 
-// INICIAR GRÁFICA (Botón Start)
 function startChart() {
-    if (!isCommActive) return alert("No hay conexión con el dispositivo.");
+    if (!isCommActive) return alert("No hay conexión.");
     if (document.getElementById('chart-added-list').children.length === 0) {
-        return alert("Agregue al menos una variable a la lista antes de iniciar.");
+        return alert("Agregue al menos una variable.");
     }
-
     isCharting = true;
     updateChartButtons();
-
-    // Iniciar loop de lectura exclusivo para el gráfico (cada 1s)
     if (chartInterval) clearInterval(chartInterval);
     chartInterval = setInterval(updateChartData, 1000);
 }
 
-// DETENER GRÁFICA (Botón Stop)
 function stopChart() {
     isCharting = false;
     updateChartButtons();
-
     if (chartInterval) clearInterval(chartInterval);
     chartInterval = null;
 }
 
-// LOOP DE DATOS DEL GRÁFICO
 function updateChartData() {
     if (!isCharting || !isCommActive || !myChart) return;
 
@@ -915,15 +969,13 @@ function updateChartData() {
         body: JSON.stringify({ ids: idsToRead })
     })
     .then(r => {
-        // Detección de error 500 (Watchdog)
         if (!r.ok) throw new Error("Device Unresponsive");
         return r.json();
     })
     .then(data => {
-        pollErrorCount = 0; // Resetear errores al recibir datos OK
+        pollErrorCount = 0; 
         const nowLabel = new Date().toLocaleTimeString(); 
 
-        // Histórico de 60 puntos
         if (myChart.data.labels.length > 60) myChart.data.labels.shift();
         myChart.data.labels.push(nowLabel);
 
@@ -946,7 +998,6 @@ function updateChartData() {
     .catch(err => {
         console.error("Chart polling error:", err);
         pollErrorCount++;
-        // Si fallan 3 lecturas seguidas, desconexión
         if (pollErrorCount >= 3) {
             handleLostConnection();
         }

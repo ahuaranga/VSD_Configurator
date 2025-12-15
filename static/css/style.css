@@ -270,3 +270,11 @@ canvas {
     max-width: 100%;
     max-height: 100%;
 }
+
+/* --- NUEVA CLASE PARA TEXTOS ESTÁTICOS ALINEADOS A LA IZQUIERDA --- */
+.value-left {
+    flex: 1; /* Ocupa el espacio restante del flex (columna derecha) */
+    text-align: left; /* Alineación del texto a la izquierda */
+    padding: 4px;
+    padding-left: 5px; /* Pequeño margen para que no pegue con la etiqueta si se acercan */
+}

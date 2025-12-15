@@ -116,30 +116,166 @@
 
                 <div id="view-configure" class="view-section" style="display: none;">
                     <div class="columns-container">
-                        <fieldset class="group-box"><legend>Configuration</legend>
-                            <div class="form-row highlight-cyan"><label>1 Motor Control Mode:</label><select><option>InductionVHz</option></select></div>
-                            <div class="form-row"><label>2 Voltage Class:</label><select><option>High (480V)</option></select></div>
-                            <div class="form-row"><label>3 Transformer Ratio:</label><input type="number" value="1"></div>
-                            <div class="form-row"><label>4 Stop Method:</label><select><option>Coast</option></select></div>
-                            <div class="form-row"><label>5 Catch a Spinning Motor:</label><select><option>No</option></select></div>
-                            <div class="form-row"><label>6 Catch a Spinning Motor Mode:</label><select><option>Sweep</option></select></div>
-                            <div class="form-row"><label>7 Rotation:</label><select><option>0</option></select></div>
-                            <div class="form-row"><label>8 Reverse While Running:</label><button class="btn-gray">Set</button></div>
-                            <div class="form-row"><label>9 Power Ridethrough:</label><select class="blue-select"><option></option></select></div>
-                            <div class="form-row label-center"><label>RO0: Contactor</label></div>
-                            <div class="form-row"><label>Output Relay (RO1) Off Delay (s):</label><input type="number" value="300"></div>
+                        
+                        <fieldset class="group-box">
+                            <legend>Configuration</legend>
+                            
+                            <div class="form-row highlight-cyan">
+                                <label>1 Motor Control Mode:</label>
+                                <select>
+                                    <option value="1">1: InductionVHz</option>
+                                    <option value="2">2: PM VHz</option>
+                                    <option value="3">3: Induction Adj Volt</option>
+                                </select>
+                            </div>
+
+                            <div class="form-row">
+                                <label>2 Voltage Class:</label>
+                                <select>
+                                    <option value="1">1: Low (400V)</option>
+                                    <option value="2" selected>2: High (480V)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-row">
+                                <label>3 Transformer Ratio:</label>
+                                <input id="cfg-transformer-ratio" type="number" value="1">
+                            </div>
+
+                            <div class="form-row">
+                                <label>4 Stop Method:</label>
+                                <select>
+                                    <option value="1" selected>1: Coast</option>
+                                    <option value="2">2: Decel</option>
+                                </select>
+                            </div>
+
+                            <div class="form-row">
+                                <label>5 Catch a Spinning Motor:</label>
+                                <select>
+                                    <option value="1">1: Yes</option>
+                                    <option value="2" selected>2: No</option>
+                                </select>
+                            </div>
+
+                            <div class="form-row">
+                                <label>6 Catch a Spinning Motor Mode:</label>
+                                <select>
+                                    <option value="1">1: Enhanced</option>
+                                    <option value="2" selected>2: Sweep</option>
+                                    <option value="3">3: Sweep2</option>
+                                </select>
+                            </div>
+
+                            <div class="form-row">
+                                <label>7 Rotation:</label>
+                                <select>
+                                    <option value="1" selected>1: 0</option>
+                                    <option value="2">2: 1</option>
+                                </select>
+                            </div>
+
+                            <div class="form-row">
+                                <label>8 Reverse While Running:</label>
+                                <button class="btn-gray">Set</button>
+                            </div>
+
+                            <div class="form-row">
+                                <label>9 Power Ridethrough:</label>
+                                <select class="blue-select">
+                                    <option value="1">1: Disable</option>
+                                    <option value="2">2: Enable</option>
+                                </select>
+                            </div>
+
+                            <div class="form-row label-center">
+                                <label>RO0: Contactor</label>
+                            </div>
+
+                            <div class="form-row">
+                                <label>Output Relay (RO1) Off Delay (s):</label>
+                                <input type="number" value="300">
+                            </div>
+
+                            <div class="form-row">
+                                <label>Door Open (DI0) Action:</label>
+                                <select class="blue-select">
+                                    <option value="1" selected>Bypass</option>
+                                    <option value="2">Log</option>
+                                    <option value="3">Stop</option>
+                                    <option value="4">Stop & Log</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label>ESD Switch (DI1) Action:</label>
+                                <select class="blue-select">
+                                    <option value="1" selected>Bypass</option>
+                                    <option value="2">Log</option>
+                                    <option value="3">Stop</option>
+                                    <option value="4">Stop & Log</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label>Heat Exchanger (DI2) Action:</label>
+                                <select class="blue-select">
+                                    <option value="1" selected>Bypass</option>
+                                    <option value="2">Log</option>
+                                    <option value="3">Stop</option>
+                                    <option value="4">Stop & Log</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label>Safety Switch (DI3) Action:</label>
+                                <select class="blue-select">
+                                    <option value="1" selected>Bypass</option>
+                                    <option value="2">Log</option>
+                                    <option value="3">Stop</option>
+                                    <option value="4">Stop & Log</option>
+                                </select>
+                            </div>
+                            <div class="form-row active-param">
+                                <label>Door Interlock (DI5) Action:</label>
+                                <select class="blue-select">
+                                    <option value="1" selected>Bypass</option>
+                                    <option value="2">Log</option>
+                                </select>
+                            </div>
                         </fieldset>
+
                         <div class="stack-container">
-                            <fieldset class="group-box"><legend>Motor Nameplate Parameters</legend>
+                            <fieldset class="group-box">
+                                <legend>Motor Nameplate Parameters</legend>
                                 <div class="form-row"><label>Amps (A):</label><input type="number" value="10"></div>
                                 <div class="form-row"><label>P26 Setting (A):</label><input type="text" value="10.00" disabled class="input-disabled"></div>
-                                <div class="form-row"><label>VSD Speed (RPM):</label><input type="text" value="1800" disabled class="input-disabled"></div>
+                                
+                                <div class="form-row">
+                                    <label>VSD Speed (RPM):</label>
+                                    <input id="cfg-vsd-speed" type="text" value="1800">
+                                </div>
+                                
                                 <div class="form-row"><label>Power (kW):</label><input type="number" value="75"></div>
                                 <div class="form-row"><label>Poles:</label><input type="number" value="4"></div>
                             </fieldset>
-                            <fieldset class="group-box"><legend>Base Parameters</legend>
-                                <div class="form-row"><label>Volts (V):</label><input type="number" value="460"></div>
+
+                            <fieldset class="group-box">
+                                <legend>Base Parameters</legend>
+                                <div class="form-row">
+                                    <label>Volts (V):</label>
+                                    <input id="cfg-base-volts" type="number" value="460">
+                                </div>
                                 <div class="form-row"><label>Frequency (Hz):</label><input type="number" value="60"></div>
+                            </fieldset>
+
+                            <fieldset class="group-box">
+                                <legend>Tracking</legend>
+                                <div class="form-row">
+                                    <label>Tracking:</label>
+                                    <input type="number" value="85">
+                                </div>
+                                <div class="form-row checkbox-row">
+                                    <input type="checkbox" id="chk-underload">
+                                    <label for="chk-underload">Underload Tracking On</label>
+                                </div>
                             </fieldset>
                         </div>
                     </div>
@@ -216,65 +352,238 @@
                     </div>
                 </div>
 
-                <div id="view-expert" class="view-section" style="display: none;">
+<div id="view-expert" class="view-section" style="display: none;">
                    <div class="columns-container">
+                        
                         <div class="stack-container">
-                            <fieldset class="group-box"><legend>Troubleshooting</legend>
-                                <div class="form-row highlight-cyan" style="justify-content: space-between;"><label>1 Trip on Comms loss is Enabled</label><button class="btn-gray">Disable</button></div>
-                                <div class="form-row label-center"><label>Spurious Count: 0</label></div>
+                            
+                            <fieldset class="group-box">
+                                <legend>Troubleshooting</legend>
+                                <div class="form-row highlight-cyan" style="justify-content: space-between;">
+                                    <label>Trip on Comms loss is Enabled</label>
+                                    <button class="btn-gray">Disable</button>
+                                </div>
+                                <div class="form-row label-center">
+                                    <label>Spurious Count: 0</label>
+                                </div>
                             </fieldset>
-                            <fieldset class="group-box"><legend>Speed Force</legend>
-                                <div class="form-row"><label>Source:</label><select class="blue-select"><option>Off</option></select></div>
-                                <div class="form-row"><label>Frequency (Hz):</label><input type="number" value="60"></div>
+
+                            <fieldset class="group-box">
+                                <legend>Speed Force</legend>
+                                <div class="form-row highlight-cyan">
+                                    <label>1 Source:</label>
+                                    <select class="blue-select">
+                                        <option value="1">1: Din 1</option>
+                                        <option value="2">2: Din 2</option>
+                                        <option value="3">3: Din 3</option>
+                                        <option value="4">4: Din 4</option>
+                                        <option value="5">5: Din 5</option>
+                                        <option value="6">6: Din 6</option>
+                                        
+                                        <optgroup label="7: Din B">
+                                            <option value="71">1: Din B 1</option>
+                                            <option value="72">2: Din B 2</option>
+                                            <option value="73">3: Din B 3</option>
+                                            <option value="74">4: Din B 4</option>
+                                            <option value="75">5: Din B 5</option>
+                                            <option value="76">6: Din B 6</option>
+                                        </optgroup>
+                                        
+                                        <option value="8" selected>8: Off</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label>2 Frequency (Hz):</label>
+                                    <input type="number" value="60">
+                                </div>
                             </fieldset>
+
+                            <fieldset class="group-box">
+                                <legend>Expert Start</legend>
+                                <div class="form-row">
+                                    <label>Rock Freq. (Hz):</label>
+                                    <input type="number" value="9.99">
+                                </div>
+                                <div class="form-row">
+                                    <label>Pattern:</label>
+                                    <input type="number" value="1">
+                                </div>
+                                <div class="form-row">
+                                    <label>Cycles:</label>
+                                    <input type="number" value="0">
+                                </div>
+                                <div class="form-row">
+                                    <label>Volt. Boost (%):</label>
+                                    <input type="number" value="1">
+                                </div>
+                            </fieldset>
+
                         </div>
+
                         <div class="stack-container">
-                            <fieldset class="group-box"><legend>Jump Frequencies</legend>
+                            
+                            <fieldset class="group-box">
+                                <legend>Jump Frequencies</legend>
                                 <div class="form-row"><label>Jump Freq. 1 (Hz):</label><input type="number" value="0"></div>
                                 <div class="form-row"><label>Jump Freq. 2 (Hz):</label><input type="number" value="0"></div>
                                 <div class="form-row"><label>Jump Freq. 3 (Hz):</label><input type="number" value="0"></div>
                                 <div class="form-row"><label>Width:</label><input type="number" value="1"></div>
                             </fieldset>
-                            <fieldset class="group-box"><legend>CASM/FS Tuning</legend>
-                                <div class="form-row"><label>FS Ki:</label><input type="number" value="150"></div>
-                                <div class="form-row"><label>FS Speed Reg Ki:</label><input type="number" value="500"></div>
+
+                            <fieldset class="group-box">
+                                <legend>Speed Units</legend>
+                                <div class="form-row highlight-cyan">
+                                    <label>1 Speed Units:</label>
+                                    <select class="blue-select">
+                                        <option value="1" selected>1: Hz</option>
+                                        <option value="2">2: RPM</option>
+                                    </select>
+                                </div>
                             </fieldset>
+
+                            <fieldset class="group-box">
+                                <legend>CASM/FS Tuning</legend>
+                                <div class="form-row">
+                                    <label>FS Ki:</label>
+                                    <input type="number" value="150">
+                                </div>
+                                <div class="form-row">
+                                    <label>FS Speed Reg Ki:</label>
+                                    <input type="number" value="500">
+                                </div>
+                                <div class="form-row">
+                                    <label>FS Speed Reg Kp:</label>
+                                    <input type="number" value="150">
+                                </div>
+                                <div class="form-row">
+                                    <label>FS Msrmnt CurLvl:</label>
+                                    <input type="number" value="150">
+                                </div>
+                            </fieldset>
+
                         </div>
                     </div>
                 </div>
 
-                <div id="view-pmm-configure" class="view-section" style="display: none;">
+               <div id="view-pmm-configure" class="view-section" style="display: none;">
                     <div class="columns-container">
-                        <fieldset class="group-box"><legend>Electrical Stability</legend>
-                            <div class="form-row highlight-cyan"><label>1 Elect Stab Enable:</label><select><option>Disabled</option></select></div>
-                            <div class="form-row"><label>2 Stability Filter (s):</label><input type="text" value="5162.22"></div>
-                            <div class="form-row"><label>3 Stability Voltage Gain:</label><input type="number" value="0"></div>
-                            <div class="form-row"><label>4 Stability Angle Gain:</label><input type="text" value="790.43"></div>
-                            <div class="form-row"><label>5 Current Limit Kd (s):</label><input type="number" value="0"></div>
+                        
+                        <fieldset class="group-box">
+                            <legend>Electrical Stability</legend>
+                            <div class="form-row highlight-cyan">
+                                <label>1 Elect Stab Enable:</label>
+                                <select class="blue-select dynamic-select">
+                                    <option value="1">1: Disable</option>
+                                    <option value="2">2: Enable</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label>2 Stability Filter (s):</label>
+                                <input type="text" value="5162.22">
+                            </div>
+                            <div class="form-row">
+                                <label>3 Stability Voltage Gain:</label>
+                                <input type="number" value="0">
+                            </div>
+                            <div class="form-row">
+                                <label>4 Stability Angle Gain:</label>
+                                <input type="text" value="790.43">
+                            </div>
+                            <div class="form-row">
+                                <label>5 Current Limit Kd (s):</label>
+                                <input type="number" value="0">
+                            </div>
                         </fieldset>
-                        <fieldset class="group-box"><legend>Step Out Detection</legend>
-                            <div class="form-row"><label>Action:</label><select class="blue-select" style="text-align-last: right;"><option>Bypass</option></select></div>
-                            <div class="form-row"><label>Minimum Arming Speed (%):</label><input type="number" value="20"></div>
-                            <div class="form-row"><label>Arming Speed (Hz):</label><input type="text" value="12.00" disabled class="input-disabled"></div>
-                            <div class="form-row"><label>PowerFactor Low Setpoint:</label><input type="number" value="0.3"></div>
-                            <div class="form-row"><label>PowerFactor Low Tracking (%):</label><input type="number" value="50"></div>
-                            <div class="form-row"><label>Trip Time (s):</label><input type="number" value="5"></div>
+
+                        <fieldset class="group-box">
+                            <legend>Step Out Detection</legend>
+                            <div class="form-row">
+                                <label>Action:</label>
+                                <select class="blue-select dynamic-select">
+                                    <option value="1">1: Bypass</option>
+                                    <option value="2">2: Log</option>
+                                    <option value="3">3: Stop</option>
+                                    <option value="4">4: Stop & Log</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label>Minimum Arming Speed (%):</label>
+                                <input type="number" value="20">
+                            </div>
+                            
+                            <div class="form-row">
+                                <label>Arming Speed (Hz):</label>
+                                <span class="value-left">12.00</span>
+                            </div>
+                            
+                            <div class="form-row">
+                                <label>PowerFactor Low Setpoint:</label>
+                                <input type="number" value="0.3">
+                            </div>
+                            <div class="form-row">
+                                <label>PowerFactor Low Tracking (%):</label>
+                                <input type="number" value="50">
+                            </div>
+                            <div class="form-row">
+                                <label>Trip Time (s):</label>
+                                <input type="number" value="5">
+                            </div>
                         </fieldset>
+
                     </div>
                 </div>
 
                 <div id="view-pmm-configure-2" class="view-section" style="display: none;">
                     <div class="columns-container">
-                        <fieldset class="group-box"><legend>3 PMM Setup</legend>
-                            <div class="form-row highlight-cyan"><label>Motor Setup Mode:</label><select class="blue-select"><option>Manual Setup</option></select></div>
-                            <div class="form-row"><label>Extended speed Mode</label><select class="blue-select"><option>Disabled</option></select></div>
-                            <div class="form-row"><label>Required Surface Voltage:</label><input type="number" value="2000" disabled class="input-disabled"></div>
-                            <div class="form-row"><label>SUT Primary:</label><input type="number" value="400" disabled class="input-disabled"></div>
-                            <div class="form-row"><label>SUT Secondary:</label><input type="number" value="2000" disabled class="input-disabled"></div>
-                            <div class="form-row"><label>Suggested Transformer Ratio:</label><span class="value-text">0</span></div>
-                            <div class="form-row"><label>Transformer Ratio:</label><span class="value-text">1</span></div>
+                        
+                        <fieldset class="group-box">
+                            <legend>3 PMM Setup</legend>
+                            <div class="form-row highlight-cyan">
+                                <label>Motor Setup Mode:</label>
+                                <select id="pmm-setup-mode" class="blue-select dynamic-select" onchange="togglePMMFields()">
+                                    <option value="1">1: Automatic Setup</option>
+                                    <option value="2">2: Manual Setup</option>
+                                    <option value="3">3: Expert Setup</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-row">
+                                <label>Extended speed Mode</label>
+                                <select id="pmm-ext-speed-mode" class="blue-select dynamic-select" onchange="toggleExtendedFreq()">
+                                    <option value="1">1: Enable</option>
+                                    <option value="2" selected>2: Disable</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label>Required Surface Voltage:</label>
+                                <input type="number" value="2000" class="pmm-input">
+                            </div>
+
+                            <div class="form-row" id="row-ext-base-freq" style="display: none;">
+                                <label>Extended Base Freq:</label>
+                                <input type="number" value="0" class="pmm-input">
+                            </div>
+
+                            <div class="form-row">
+                                <label>SUT Primary:</label>
+                                <input type="number" value="400" class="pmm-input">
+                            </div>
+                            <div class="form-row">
+                                <label>SUT Secondary:</label>
+                                <input type="number" value="2000" class="pmm-input">
+                            </div>
+                            <div class="form-row">
+                                <label>Suggested Transformer Ratio:</label>
+                                <span class="value-left">0</span>
+                            </div>
+                            <div class="form-row">
+                                <label>Transformer Ratio:</label>
+                                <span class="value-left">1</span>
+                            </div>
                         </fieldset>
-                        <fieldset class="group-box"><legend>Live Values</legend>
+
+                        <fieldset class="group-box">
+                            <legend>Live Values</legend>
                             <div class="form-row"><label>Motor Rated Speed (Hz):</label><span>60</span></div>
                             <div class="form-row"><label>PowerFactor:</label><span>0</span></div>
                             <div class="form-row"><label>Output Frequency (Hz):</label><span>0</span></div>
