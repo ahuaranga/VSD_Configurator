@@ -295,22 +295,22 @@
                                 <span class="chart-label">Variable</span>
                                 <select id="chart-var-select" class="chart-select">
                                     <optgroup label="Power Input">
-                                        <option value="vsd_supply_voltage">2103 Supply Voltage</option>
+                                        <option value="vsd_supply_voltage">Supply Voltage</option>
                                     </optgroup>
                                     <optgroup label="Diagnostics">
-                                        <option value="vsd_temperature">2102 Temperature</option>
+                                        <option value="vsd_temperature">Temperature</option>
                                     </optgroup>
                                     <optgroup label="Down Hole Tool">
-                                        <option value="dht_intake_pressure">2136 Intake Pressure</option>
-                                        <option value="dht_discharge_pressure">2137 Discharge Pressure</option>
-                                        <option value="dht_intake_temp">2139 Intake Temp</option>
-                                        <option value="dht_motor_temp">2140 Motor Temp</option>
-                                        <option value="dht_vibration">2141 Vibration</option>
-                                        <option value="dht_active_leakage">2142 Active Leakage</option>
-                                        <option value="dht_cz">2144 DH Cz</option>
-                                        <option value="dht_cf">2145 DH Cf</option>
-                                        <option value="dht_passive_leakage">2147 Passive Leakage</option>
-                                        <option value="dht_diff_pressure">2161 Diff Pressure</option>
+                                        <option value="dht_intake_pressure">Intake Pressure</option>
+                                        <option value="dht_discharge_pressure">Discharge Pressure</option>
+                                        <option value="dht_intake_temp">Intake Temp</option>
+                                        <option value="dht_motor_temp">Motor Temp</option>
+                                        <option value="dht_vibration">Vibration</option>
+                                        <option value="dht_active_leakage">Active Leakage</option>
+                                        <option value="dht_cz">DH Cz</option>
+                                        <option value="dht_cf">DH Cf</option>
+                                        <option value="dht_passive_leakage">Passive Leakage</option>
+                                        <option value="dht_diff_pressure">Diff Pressure</option>
                                     </optgroup>
                                 </select>
                             </div>
@@ -318,6 +318,7 @@
                             <div style="display: flex; gap: 10px;">
                                 <button class="btn-standard" onclick="addVariableToChart()">Add Variable</button>
                                 <button id="btn-remove-var" class="btn-standard" onclick="removeVariableFromChart()" disabled>Remove Variable</button>
+                                <button id="btn-clear-vars" class="btn-standard" onclick="clearAllVariables()" disabled>Clear Variables</button>
                             </div>
 
                             <div style="width: 1px; height: 30px; background: #ccc; margin: 0 5px;"></div>

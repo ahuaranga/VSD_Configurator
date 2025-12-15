@@ -248,6 +248,7 @@ function saveAlarmChanges() {
                 const actEl = document.getElementById('act-' + currentEditingId);
                 if(valEl) valEl.innerText = newSetpoint;
                 if(actEl) actEl.innerText = selectedAction;
+                
                 alert("Valor guardado correctamente.");
                 closeAlarmModal();
             } else {
@@ -261,13 +262,14 @@ function saveAlarmChanges() {
         const actEl = document.getElementById('act-' + currentEditingId);
         if(valEl) valEl.innerText = newSetpoint;
         if(actEl) actEl.innerText = selectedAction;
+        
         closeAlarmModal();
         if(!isCommActive) alert("Guardado en pantalla (Sin conexión activa).");
     }
 }
 
 // =========================================================
-// 3. COMUNICACIÓN Y POLLING
+// 3. COMUNICACIÓN Y POLLING (Lógica Principal)
 // =========================================================
 
 function openConfigModal() {
@@ -286,7 +288,7 @@ function openConfigModal() {
                 portSelect.disabled = false;
                 data.forEach(port => {
                     let opt = new Option(`${port.device} - ${port.description}`, port.device);
-                    if (savedConfig.port === port.device) opt.selected = true;
+                    if (savedConfig.port === port.device) opt.selected = true; // Recordar selección anterior
                     portSelect.add(opt);
                 });
                 if (!savedConfig.port) portSelect.selectedIndex = 0;
@@ -361,10 +363,15 @@ function startCommunication() {
         if(data.status === 'success') {
             setTopLed(true);
             isCommActive = true;
-            pollErrorCount = 0; 
+            pollErrorCount = 0; // Resetear errores al conectar
+            
             startPolling();
             updateChartButtons();
-            setTimeout(() => { statusModal.style.display = 'none'; }, 800);
+
+            setTimeout(() => {
+                statusModal.style.display = 'none';
+            }, 800);
+
         } else {
             progressBar.style.backgroundColor = '#c62828';
             statusText.innerText = "Fallo en la conexión";
@@ -392,7 +399,7 @@ function closeStatusModal() {
 }
 
 function stopCommunication() {
-    stopPolling();
+    stopPolling(); 
     if(isCharting) stopChart();
 
     fetch('/api/disconnect', { method: 'POST' })
@@ -406,19 +413,23 @@ function stopCommunication() {
     .catch(err => alert("Error al desconectar: " + err));
 }
 
-// --- MANEJO DE PÉRDIDA DE CONEXIÓN (WATCHDOG) ---
+// --- NUEVA FUNCIÓN: MANEJO DE PÉRDIDA DE CONEXIÓN AUTOMÁTICA ---
 function handleLostConnection() {
     stopPolling();
     if(isCharting) stopChart();
     
+    // Forzamos estado desconectado
     isCommActive = false;
     setTopLed(false);
     updateChartButtons();
     
+    // Avisar al backend para que limpie el puerto (opcional pero bueno)
     fetch('/api/disconnect', { method: 'POST' }).catch(() => {});
+
     alert("ERROR: Conexión perdida con el dispositivo.\nVerifique el cable.");
 }
 
+// --- D. POLLING (LECTURA CONSTANTE) ---
 function startPolling() {
     if (pollingInterval) clearInterval(pollingInterval);
     pollingInterval = setInterval(pollActiveView, 2000);
@@ -450,11 +461,14 @@ function pollActiveView() {
         body: JSON.stringify({ ids: idsToRead })
     })
     .then(r => {
+        // Si el backend devuelve 500 o 400, lanzamos error
         if (!r.ok) throw new Error("Device Unresponsive");
         return r.json();
     })
     .then(data => {
-        pollErrorCount = 0; // Lectura exitosa, reseteamos errores
+        pollErrorCount = 0; // Lectura exitosa, reseteamos contador de errores
+        
+        // 3. Actualizar valores en pantalla
         for (const [modbusID, value] of Object.entries(data)) {
             if (value !== null) {
                 const suffix = mapIdToSuffix[modbusID];
@@ -466,13 +480,14 @@ function pollActiveView() {
     .catch(err => {
         console.error("Polling error:", err);
         pollErrorCount++;
-        // Si fallan 3 lecturas seguidas, asumimos desconexión
+        // Si fallan 3 lecturas seguidas, asumimos desconexión física
         if (pollErrorCount >= 3) {
             handleLostConnection();
         }
     });
 }
 
+// --- E. AUXILIARES ---
 function setTopLed(isConnected) {
     const statusDiv = document.getElementById('top-conn-indicator');
     const statusText = statusDiv.querySelector('.conn-text');
@@ -486,7 +501,7 @@ function setTopLed(isConnected) {
 }
 
 // =========================================================
-// 4. SISTEMA DE MENÚ
+// 4. SISTEMA DE MENÚ Y NAVEGACIÓN
 // =========================================================
 function toggleMenuSystem() { isMenuOpen = !isMenuOpen; updateMenuVisibility(); }
 
@@ -499,7 +514,9 @@ function goHome() {
     currentViewRows = [];
 }
 
-function downloadConfig() { alert("Funcionalidad de descarga de reporte en desarrollo."); }
+function downloadConfig() {
+    alert("Funcionalidad de descarga de reporte en desarrollo.");
+}
 
 // =========================================================
 // 5. LOGICA DEL GRAFICADOR (Add / Remove / Select / Chart.js)
@@ -515,8 +532,8 @@ function initChart() {
     myChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: [], 
-            datasets: [] 
+            labels: [], // Eje X (Tiempo)
+            datasets: [] // Variables agregadas
         },
         options: {
             responsive: true,
@@ -527,16 +544,21 @@ function initChart() {
                 tooltip: { enabled: true, mode: 'index', position: 'nearest' },
                 legend: {
                     display: true,
-                    position: 'bottom',
+                    position: 'bottom', // LEYENDA EN LA PARTE INFERIOR
                     labels: {
-                        boxWidth: 12, font: { size: 12 },
+                        boxWidth: 12, 
+                        font: { size: 12 },
+                        // Función mágica para mostrar "Valor Actual + Nombre"
                         generateLabels: function(chart) {
                             const datasets = chart.data.datasets;
                             return datasets.map((dataset, i) => {
+                                // Obtener último valor disponible
                                 const lastValue = dataset.data.length > 0 ? dataset.data[dataset.data.length - 1] : '--';
+                                // Obtener unidad del mapa global
                                 const unit = dataset.unit || ''; 
+                                
                                 return {
-                                    text: `${lastValue} ${unit} - ${dataset.origLabel}`,
+                                    text: `${lastValue} ${unit} - ${dataset.origLabel}`, // E.g. "480 V - Supply Voltage"
                                     fillStyle: dataset.borderColor,
                                     strokeStyle: dataset.borderColor,
                                     lineWidth: 2,
@@ -568,7 +590,7 @@ function getRandomColor() {
 function openChartModule() {
     const target = document.getElementById('view-chart-module');
     
-    // CORRECCIÓN BUG: Si ya estamos en la pantalla, no hacer nada
+    // CORRECCIÓN BUG: Si ya estamos en la pantalla, no hacer nada (evita reset)
     if (target.style.display === 'block') {
         return; 
     }
@@ -586,9 +608,19 @@ function openChartModule() {
     if (!myChart) {
         setTimeout(initChart, 100);
     } else {
+        // Redibujar para ajustar tamaño por si cambió el layout
         myChart.resize();
         myChart.update();
     }
+
+    // 3. Actualizar estado de los botones al entrar
+    // VERIFICAR ESTADO DEL BOTÓN CLEAR
+    const list = document.getElementById('chart-added-list');
+    const btnClear = document.getElementById('btn-clear-vars');
+    if (list && btnClear) {
+        btnClear.disabled = (list.children.length === 0);
+    }
+    
     updateChartButtons();
 }
 
@@ -623,7 +655,12 @@ function loadView(viewName) {
         default: document.getElementById('default-title').innerText = viewName;
     }
     showSection(targetId);
-    if(isCommActive) setTimeout(pollActiveView, 100);
+    
+    // Si estamos conectados, forzar lectura inmediata al cambiar pantalla
+    if(isCommActive) {
+        setTimeout(pollActiveView, 100);
+    }
+
     if (window.innerWidth < 1024) { isMenuOpen = false; updateMenuVisibility(); }
 }
 
@@ -675,22 +712,23 @@ function init() {
 
 init();
 
-// --- B. GESTIÓN DE VARIABLES (DROPDOWN INTELIGENTE) ---
+// --- B. GESTIÓN DE VARIABLES ---
 
 function addVariableToChart() {
     const select = document.getElementById('chart-var-select');
     const list = document.getElementById('chart-added-list');
+    const btnClear = document.getElementById('btn-clear-vars');
     
     if (select.selectedIndex === -1 || !select.value) return;
 
-    // Obtener y limpiar texto
     let selectedOption = select.options[select.selectedIndex];
+    // Eliminar números del texto visible (Regex para limpiar "2103 ")
     let selectedText = selectedOption.text.replace(/^\d+\s+/, ''); 
     const selectedValue = select.value;
 
     const existingItems = Array.from(list.children).map(li => li.dataset.value);
     if (existingItems.includes(selectedValue)) {
-        return alert("Esta variable ya está agregada.");
+        return alert("Esta variable ya está agregada a la lista.");
     }
 
     // 1. Agregar a la LISTA UI
@@ -700,25 +738,28 @@ function addVariableToChart() {
     li.onclick = function() { selectChartItem(this); };
     list.appendChild(li);
 
-    // 2. OCULTAR DEL DROPDOWN (Nueva Lógica)
+    // 2. Ocultar del Dropdown
     selectedOption.disabled = true;
     selectedOption.hidden = true;
     selectedOption.style.display = 'none';
-    select.selectedIndex = -1; // Resetear selección para forzar al usuario a elegir otra
+    select.selectedIndex = -1; 
+
+    // Activar botón Clear
+    if(btnClear) btnClear.disabled = false;
 
     // 3. Agregar al GRÁFICO
     if (!myChart) initChart();
 
     const newDataset = {
-        label: selectedText,
-        origLabel: selectedText,
-        unit: UNIT_MAP[selectedValue] || '',
+        label: selectedText,     // ID interno
+        origLabel: selectedText, // Texto base para leyenda
+        unit: UNIT_MAP[selectedValue] || '', // Unidad
         data: [], 
         borderColor: getRandomColor(),
         borderWidth: 2,
         fill: false,
         pointRadius: 0,
-        pointHoverRadius: 5
+        pointHoverRadius: 5 // Mostrar punto al pasar mouse
     };
 
     myChart.data.datasets.push(newDataset);
@@ -728,20 +769,27 @@ function addVariableToChart() {
 function selectChartItem(element) {
     const list = document.getElementById('chart-added-list');
     const btnRemove = document.getElementById('btn-remove-var');
+
+    // 1. Deseleccionar todos los demás items
     Array.from(list.children).forEach(child => child.classList.remove('selected'));
+
+    // 2. Seleccionar el actual (CYAN)
     element.classList.add('selected');
+
+    // 3. Activar el botón de remover
     btnRemove.disabled = false;
 }
 
 function removeVariableFromChart() {
     const list = document.getElementById('chart-added-list');
     const btnRemove = document.getElementById('btn-remove-var');
+    const btnClear = document.getElementById('btn-clear-vars');
     const selectedItem = list.querySelector('.selected');
     
     if (selectedItem) {
         const valToRemove = selectedItem.dataset.value; 
         
-        // 1. RESTAURAR EN DROPDOWN (Nueva Lógica)
+        // 1. Restaurar en dropdown
         const select = document.getElementById('chart-var-select');
         for (let i = 0; i < select.options.length; i++) {
             if (select.options[i].value === valToRemove) {
@@ -764,10 +812,42 @@ function removeVariableFromChart() {
             }
         }
         
-        // 3. Remover de la lista UI
         list.removeChild(selectedItem);
         btnRemove.disabled = true;
+
+        // Desactivar Clear si no queda nada
+        if (list.children.length === 0 && btnClear) {
+            btnClear.disabled = true;
+        }
     }
+}
+
+function clearAllVariables() {
+    const list = document.getElementById('chart-added-list');
+    const select = document.getElementById('chart-var-select');
+    const btnRemove = document.getElementById('btn-remove-var');
+    const btnClear = document.getElementById('btn-clear-vars');
+
+    // 1. Restaurar todas las opciones del Dropdown
+    for (let i = 0; i < select.options.length; i++) {
+        select.options[i].disabled = false;
+        select.options[i].hidden = false;
+        select.options[i].style.display = '';
+    }
+    select.selectedIndex = -1;
+
+    // 2. Limpiar Lista UI
+    list.innerHTML = '';
+
+    // 3. Limpiar Gráfico
+    if (myChart) {
+        myChart.data.datasets = [];
+        myChart.update();
+    }
+
+    // 4. Desactivar botones
+    btnRemove.disabled = true;
+    btnClear.disabled = true;
 }
 
 // --- C. ESTADO START / STOP ---
@@ -775,40 +855,52 @@ function removeVariableFromChart() {
 function updateChartButtons() {
     const btnStart = document.getElementById('btn-chart-start');
     const btnStop = document.getElementById('btn-chart-stop');
+
     if (!btnStart || !btnStop) return; 
 
     if (!isCommActive) {
+        // CASO 1: DESCONECTADO (Todo apagado)
         btnStart.disabled = true;
         btnStop.disabled = true;
     } else {
+        // CASO 2: CONECTADO
         if (isCharting) {
+            // Graficando: Start deshabilitado, Stop habilitado
             btnStart.disabled = true;
             btnStop.disabled = false;
         } else {
+            // En pausa: Start habilitado, Stop deshabilitado
             btnStart.disabled = false;
             btnStop.disabled = true;
         }
     }
 }
 
+// INICIAR GRÁFICA (Botón Start)
 function startChart() {
-    if (!isCommActive) return alert("No hay conexión.");
+    if (!isCommActive) return alert("No hay conexión con el dispositivo.");
     if (document.getElementById('chart-added-list').children.length === 0) {
-        return alert("Agregue al menos una variable.");
+        return alert("Agregue al menos una variable a la lista antes de iniciar.");
     }
+
     isCharting = true;
     updateChartButtons();
+
+    // Iniciar loop de lectura exclusivo para el gráfico (cada 1s)
     if (chartInterval) clearInterval(chartInterval);
     chartInterval = setInterval(updateChartData, 1000);
 }
 
+// DETENER GRÁFICA (Botón Stop)
 function stopChart() {
     isCharting = false;
     updateChartButtons();
+
     if (chartInterval) clearInterval(chartInterval);
     chartInterval = null;
 }
 
+// LOOP DE DATOS DEL GRÁFICO
 function updateChartData() {
     if (!isCharting || !isCommActive || !myChart) return;
 
@@ -823,32 +915,40 @@ function updateChartData() {
         body: JSON.stringify({ ids: idsToRead })
     })
     .then(r => {
+        // Detección de error 500 (Watchdog)
         if (!r.ok) throw new Error("Device Unresponsive");
         return r.json();
     })
     .then(data => {
-        pollErrorCount = 0; 
+        pollErrorCount = 0; // Resetear errores al recibir datos OK
         const nowLabel = new Date().toLocaleTimeString(); 
 
+        // Histórico de 60 puntos
         if (myChart.data.labels.length > 60) myChart.data.labels.shift();
         myChart.data.labels.push(nowLabel);
 
         myChart.data.datasets.forEach(dataset => {
             const matchingLi = listItems.find(li => li.innerText.includes(dataset.origLabel));
+            
             if (matchingLi) {
                 const modbusID = matchingLi.dataset.value;
                 const value = data[modbusID];
+
                 if (value !== null && value !== undefined) {
                     if (dataset.data.length > 60) dataset.data.shift();
                     dataset.data.push(value);
                 }
             }
         });
+
         myChart.update();
     })
     .catch(err => {
         console.error("Chart polling error:", err);
         pollErrorCount++;
-        if (pollErrorCount >= 3) handleLostConnection();
+        // Si fallan 3 lecturas seguidas, desconexión
+        if (pollErrorCount >= 3) {
+            handleLostConnection();
+        }
     });
 }
