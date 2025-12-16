@@ -10,7 +10,7 @@ const TAG_MAP = {
     'vsd_supply_voltage': 'vsd_supply_voltage', // Reg 2103
     'vsd_temperature': 'vsd_temperature',       // Reg 2102
 
-    // --- GRUPO 3: DOWN HOLE TOOL (NUEVO) ---
+    // --- GRUPO 3: DOWN HOLE TOOL ---
     'dht_intake_pressure': 'dht_intake_pressure',       // Reg 2136
     'dht_discharge_pressure': 'dht_discharge_pressure', // Reg 2137
     'dht_intake_temp': 'dht_intake_temp',               // Reg 2139
@@ -45,20 +45,21 @@ let savedConfig = {
     port: null,
     baudrate: 19200,
     bytesize: 8,
-    parity: 'N', // Por defecto None
+    parity: 'N',
     stopbits: 1,
     timeout: 1
 };
 
-let connectionInterval = null; // Animación de barra de progreso
-let pollingInterval = null;    // Timer de lectura constante
-let isCommActive = false;      // Bandera de estado de conexión
-let pollErrorCount = 0;        // Contador de errores consecutivos (Watchdog)
+let connectionInterval = null; 
+let pollingInterval = null;    
+let isCommActive = false;      
+let pollErrorCount = 0;        
 
 // --- VARIABLES GLOBALES DEL GRAFICADOR ---
-let myChart = null;          // Instancia de Chart.js
-let isCharting = false;      // Estado de ejecución de gráfica
-let chartInterval = null;    // Timer de actualización de gráfica
+let myChart = null;          
+let isCharting = false;      
+let chartInterval = null;    
+let chartPollingRate = 1000; // Valor por defecto (1 segundo)
 
 // --- DATOS DEL MENÚ ---
 const menuData = [
@@ -499,7 +500,7 @@ function downloadConfig() {
 }
 
 // =========================================================
-// 5. LOGICA DEL GRAFICADOR (Add / Remove / Select / Chart.js)
+// 5. LOGICA DEL GRAFICADOR (Chart.js + Dual Axis + Sampling)
 // =========================================================
 
 function initChart() {
@@ -530,9 +531,10 @@ function initChart() {
                             const datasets = chart.data.datasets;
                             return datasets.map((dataset, i) => {
                                 const lastValue = dataset.data.length > 0 ? dataset.data[dataset.data.length - 1] : '--';
-                                const unit = dataset.unit || ''; 
+                                const unit = dataset.unit || '';
+                                const axisLabel = dataset.yAxisID === 'y' ? '[L]' : '[R]';
                                 return {
-                                    text: `${lastValue} ${unit} - ${dataset.origLabel}`,
+                                    text: `${axisLabel} ${lastValue} ${unit} - ${dataset.origLabel}`,
                                     fillStyle: dataset.borderColor,
                                     strokeStyle: dataset.borderColor,
                                     lineWidth: 2,
@@ -545,8 +547,20 @@ function initChart() {
                 }
             },
             scales: {
-                x: { display: true, title: { display: true, text: 'Time (s)' } },
-                y: { display: true, title: { display: true, text: 'Value' } }
+                x: { display: true, title: { display: true, text: 'Time' } },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: { display: true, text: 'Left Axis' }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    grid: { drawOnChartArea: false },
+                    title: { display: true, text: 'Right Axis' }
+                }
             }
         }
     });
@@ -563,9 +577,7 @@ function getRandomColor() {
 
 function openChartModule() {
     const target = document.getElementById('view-chart-module');
-    if (target.style.display === 'block') {
-        return; 
-    }
+    if (target.style.display === 'block') return; 
 
     document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
     target.style.display = 'block';
@@ -583,7 +595,6 @@ function openChartModule() {
         myChart.update();
     }
     
-    // Verificar estado botón Clear
     const list = document.getElementById('chart-added-list');
     const btnClear = document.getElementById('btn-clear-vars');
     if (list && btnClear) {
@@ -664,24 +675,15 @@ function updateClock() {
 }
 
 // =========================================================
-// 6. FUNCIONALIDAD DROPDOWN (Ocultar números al seleccionar)
+// 6. FUNCIONALIDAD DROPDOWN
 // =========================================================
 function initDropdownLogic() {
     const selects = document.querySelectorAll('select.dynamic-select'); 
-    
     selects.forEach(sel => {
         Array.from(sel.options).forEach(opt => {
-            if (!opt.dataset.orig) {
-                opt.dataset.orig = opt.text;
-            }
+            if (!opt.dataset.orig) opt.dataset.orig = opt.text;
         });
-
-        const showNumbers = () => {
-            Array.from(sel.options).forEach(opt => {
-                opt.text = opt.dataset.orig;
-            });
-        };
-
+        const showNumbers = () => { Array.from(sel.options).forEach(opt => { opt.text = opt.dataset.orig; }); };
         const hideNumbers = () => {
             Array.from(sel.options).forEach(opt => opt.text = opt.dataset.orig);
             if (sel.selectedIndex !== -1) {
@@ -689,62 +691,49 @@ function initDropdownLogic() {
                 selected.text = selected.text.replace(/^\d+:\s*/, '');
             }
         };
-
         sel.addEventListener('mousedown', showNumbers); 
         sel.addEventListener('change', hideNumbers);    
         sel.addEventListener('blur', hideNumbers);      
-
         hideNumbers();
     });
 }
 
 // =========================================================
-// 7. FUNCIONALIDAD CAMPO DINÁMICO (Extended Speed Mode)
+// 7. FUNCIONALIDAD CAMPO DINÁMICO
 // =========================================================
 function toggleExtendedFreq() {
     const select = document.getElementById('pmm-ext-speed-mode');
     const row = document.getElementById('row-ext-base-freq');
-    
     if (select && row) {
-        if (select.value === "1") {
-            row.style.display = 'flex';
-        } else {
-            row.style.display = 'none';
-        }
+        row.style.display = (select.value === "1") ? 'flex' : 'none';
     }
-    // IMPORTANTE: Al cambiar esto también validamos si hay que bloquear Configuration
     updateConfigLocks();
 }
 
 // =========================================================
-// 8. FUNCIONALIDAD BLOQUEO (Motor Setup Mode)
+// 8. FUNCIONALIDAD BLOQUEO
 // =========================================================
 function togglePMMFields() {
     const modeSelect = document.getElementById('pmm-setup-mode');
     if (!modeSelect) return;
-
     const isManual = (modeSelect.value === '2'); 
-    
     const container = document.getElementById('view-pmm-configure-2');
     const fieldset = container.querySelector('fieldset.group-box'); 
-
     const inputs = fieldset.querySelectorAll('input, select');
 
     inputs.forEach(input => {
         if (input.id === 'pmm-setup-mode') return;
         input.disabled = !isManual;
     });
-
-    // IMPORTANTE: Validar bloqueos cruzados
     updateConfigLocks();
 }
 
 // =========================================================
-// 9. FUNCIONALIDAD BLOQUEO CRUZADO (Config View)
+// 9. FUNCIONALIDAD BLOQUEO CRUZADO
 // =========================================================
 function updateConfigLocks() {
-    const setupMode = document.getElementById('pmm-setup-mode').value; // 2 = Manual
-    const extMode = document.getElementById('pmm-ext-speed-mode').value; // 1 = Enable
+    const setupMode = document.getElementById('pmm-setup-mode').value; 
+    const extMode = document.getElementById('pmm-ext-speed-mode').value; 
 
     const transRatio = document.getElementById('cfg-transformer-ratio');
     const vsdSpeed = document.getElementById('cfg-vsd-speed');
@@ -752,22 +741,17 @@ function updateConfigLocks() {
 
     if(!transRatio || !vsdSpeed || !volts) return;
 
-    // Condición: Manual Setup (2) AND Extended Mode Enabled (1)
     if (setupMode === '2' && extMode === '1') {
-        // Desactivar
         transRatio.disabled = true;
         vsdSpeed.disabled = true;
         volts.disabled = true;
-        // Estilo visual
         transRatio.classList.add('input-disabled');
         vsdSpeed.classList.add('input-disabled');
         volts.classList.add('input-disabled');
     } else {
-        // Activar (Por defecto)
         transRatio.disabled = false;
         vsdSpeed.disabled = false;
         volts.disabled = false;
-        
         transRatio.classList.remove('input-disabled');
         vsdSpeed.classList.remove('input-disabled');
         volts.classList.remove('input-disabled');
@@ -786,21 +770,33 @@ function init() {
     updateClock(); 
     goHome();
     
-    // INICIALIZAR LÓGICAS DE UI
     setTimeout(initDropdownLogic, 100); 
     setTimeout(toggleExtendedFreq, 100); 
     setTimeout(togglePMMFields, 100); 
-    setTimeout(updateConfigLocks, 100); // Estado inicial de bloqueos cruzados
+    setTimeout(updateConfigLocks, 100); 
 }
 
 init();
 
-// --- B. GESTIÓN DE VARIABLES ---
+// --- B. GESTIÓN DE VARIABLES Y EJES + SAMPLING RATE ---
+
+// Función para actualizar velocidad en tiempo real
+function updateSamplingRate() {
+    const select = document.getElementById('chart-sampling-select');
+    chartPollingRate = parseInt(select.value);
+
+    // Si la gráfica ya está corriendo, reiniciamos el intervalo con la nueva velocidad
+    if (isCharting && chartInterval) {
+        clearInterval(chartInterval);
+        chartInterval = setInterval(updateChartData, chartPollingRate);
+    }
+}
 
 function addVariableToChart() {
     const select = document.getElementById('chart-var-select');
     const list = document.getElementById('chart-added-list');
     const btnClear = document.getElementById('btn-clear-vars');
+    const samplingSelect = document.getElementById('chart-sampling-select'); 
     
     if (select.selectedIndex === -1 || !select.value) return;
 
@@ -813,11 +809,23 @@ function addVariableToChart() {
         return alert("Esta variable ya está agregada.");
     }
 
+    // Calculamos el tiempo en segundos para mostrarlo en la lista
+    const timeSec = chartPollingRate / 1000;
+
+    // Crear elemento de lista con Indicador Visual [L] por defecto y tiempo actual
     const li = document.createElement('li');
-    li.dataset.value = selectedValue; 
-    li.innerText = `${selectedText} (1 s)`; 
+    li.dataset.value = selectedValue;
+    li.dataset.axis = 'y'; // Por defecto Eje Izquierdo
+    li.innerText = `[L] ${selectedText} (${timeSec} s)`; 
     li.onclick = function() { selectChartItem(this); };
     list.appendChild(li);
+
+    // --- BLOQUEO DEL SELECTOR DE TIEMPO ---
+    if (samplingSelect) {
+        samplingSelect.disabled = true;
+        samplingSelect.classList.add('input-disabled'); // Opcional para estilo visual
+    }
+    // --------------------------------------
 
     selectedOption.disabled = true;
     selectedOption.hidden = true;
@@ -837,7 +845,8 @@ function addVariableToChart() {
         borderWidth: 2,
         fill: false,
         pointRadius: 0,
-        pointHoverRadius: 5
+        pointHoverRadius: 5,
+        yAxisID: 'y' // Asignación inicial al eje Izquierdo
     };
 
     myChart.data.datasets.push(newDataset);
@@ -847,15 +856,48 @@ function addVariableToChart() {
 function selectChartItem(element) {
     const list = document.getElementById('chart-added-list');
     const btnRemove = document.getElementById('btn-remove-var');
+    const btnSwap = document.getElementById('btn-swap-axis');
+
     Array.from(list.children).forEach(child => child.classList.remove('selected'));
     element.classList.add('selected');
+    
     btnRemove.disabled = false;
+    btnSwap.disabled = false; 
+}
+
+function swapVariableAxis() {
+    const list = document.getElementById('chart-added-list');
+    const selectedItem = list.querySelector('.selected');
+    
+    if (!selectedItem || !myChart) return;
+
+    // Regex para limpiar el nombre y quitar [L]/[R] y el tiempo (x s)
+    const textInLi = selectedItem.innerText;
+    const textClean = textInLi.replace(/^\[[LR]\]\s+/, '').replace(/\s\(\d+(\.\d+)?\s?s\)$/, '');
+
+    const dataset = myChart.data.datasets.find(ds => ds.origLabel === textClean);
+    const timeSec = chartPollingRate / 1000;
+    
+    if (dataset) {
+        if (dataset.yAxisID === 'y') {
+            dataset.yAxisID = 'y1'; // Mover a Derecha
+            selectedItem.dataset.axis = 'y1';
+            selectedItem.innerText = `[R] ${textClean} (${timeSec} s)`;
+        } else {
+            dataset.yAxisID = 'y'; // Mover a Izquierda
+            selectedItem.dataset.axis = 'y';
+            selectedItem.innerText = `[L] ${textClean} (${timeSec} s)`;
+        }
+        myChart.update();
+    }
 }
 
 function removeVariableFromChart() {
     const list = document.getElementById('chart-added-list');
     const btnRemove = document.getElementById('btn-remove-var');
+    const btnSwap = document.getElementById('btn-swap-axis');
     const btnClear = document.getElementById('btn-clear-vars');
+    const samplingSelect = document.getElementById('chart-sampling-select'); // Referencia
     const selectedItem = list.querySelector('.selected');
     
     if (selectedItem) {
@@ -873,7 +915,8 @@ function removeVariableFromChart() {
 
         if (myChart) {
             const textInLi = selectedItem.innerText;
-            const textClean = textInLi.replace(' (1 s)', '');
+            // Regex para limpiar el nombre y encontrar el dataset
+            const textClean = textInLi.replace(/^\[[LR]\]\s+/, '').replace(/\s\(\d+(\.\d+)?\s?s\)$/, '');
             const datasetIndex = myChart.data.datasets.findIndex(ds => ds.origLabel === textClean);
             
             if (datasetIndex !== -1) {
@@ -884,10 +927,17 @@ function removeVariableFromChart() {
         
         list.removeChild(selectedItem);
         btnRemove.disabled = true;
+        btnSwap.disabled = true;
 
-        if (list.children.length === 0 && btnClear) {
-            btnClear.disabled = true;
+        // --- DESBLOQUEO SI LA LISTA ESTÁ VACÍA ---
+        if (list.children.length === 0) {
+            if (btnClear) btnClear.disabled = true;
+            if (samplingSelect) {
+                samplingSelect.disabled = false;
+                samplingSelect.classList.remove('input-disabled');
+            }
         }
+        // ----------------------------------------
     }
 }
 
@@ -895,7 +945,9 @@ function clearAllVariables() {
     const list = document.getElementById('chart-added-list');
     const select = document.getElementById('chart-var-select');
     const btnRemove = document.getElementById('btn-remove-var');
+    const btnSwap = document.getElementById('btn-swap-axis');
     const btnClear = document.getElementById('btn-clear-vars');
+    const samplingSelect = document.getElementById('chart-sampling-select'); // Referencia
 
     for (let i = 0; i < select.options.length; i++) {
         select.options[i].disabled = false;
@@ -906,12 +958,20 @@ function clearAllVariables() {
 
     list.innerHTML = '';
 
+    // --- DESBLOQUEO SIEMPRE AL LIMPIAR TODO ---
+    if (samplingSelect) {
+        samplingSelect.disabled = false;
+        samplingSelect.classList.remove('input-disabled');
+    }
+    // ------------------------------------------
+
     if (myChart) {
         myChart.data.datasets = [];
         myChart.update();
     }
 
     btnRemove.disabled = true;
+    btnSwap.disabled = true;
     btnClear.disabled = true;
 }
 
@@ -945,7 +1005,8 @@ function startChart() {
     isCharting = true;
     updateChartButtons();
     if (chartInterval) clearInterval(chartInterval);
-    chartInterval = setInterval(updateChartData, 1000);
+    // Usamos el intervalo definido globalmente
+    chartInterval = setInterval(updateChartData, chartPollingRate);
 }
 
 function stopChart() {
@@ -976,7 +1037,11 @@ function updateChartData() {
         pollErrorCount = 0; 
         const nowLabel = new Date().toLocaleTimeString(); 
 
-        if (myChart.data.labels.length > 60) myChart.data.labels.shift();
+        // ==========================================
+        // MODO "INFINITE HISTORY" - Sin borrado de datos
+        // ==========================================
+        // No hay shift() aquí para 'labels'
+        
         myChart.data.labels.push(nowLabel);
 
         myChart.data.datasets.forEach(dataset => {
@@ -987,7 +1052,7 @@ function updateChartData() {
                 const value = data[modbusID];
 
                 if (value !== null && value !== undefined) {
-                    if (dataset.data.length > 60) dataset.data.shift();
+                    // No hay shift() aquí para 'data'
                     dataset.data.push(value);
                 }
             }

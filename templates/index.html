@@ -598,11 +598,28 @@
                 <div id="view-chart-module" class="view-section" style="display: none;">
                     
                     <div class="chart-top-section">
-                        <div style="display: flex; gap: 20px; align-items: flex-end;">
+                        
+                        <div class="chart-grid-layout">
                             
-                            <div class="chart-selection-bar">
+                            <div class="chart-dropdown-group area-sampling">
+                                <span class="chart-label">Sampling (s)</span>
+                                <select id="chart-sampling-select" class="chart-select" onchange="updateSamplingRate()">
+                                    <option value="500">0.5</option>
+                                    <option value="1000" selected>1.0</option>
+                                    <option value="2000">2.0</option>
+                                    <option value="5000">5.0</option>
+                                    <option value="10000">10.0</option>
+                                </select>
+                            </div>
+
+                            <button id="btn-swap-axis" class="btn-standard area-swap" onclick="swapVariableAxis()" disabled>Swap Axis ↔</button>
+                            <button id="btn-clear-vars" class="btn-standard area-clear" onclick="clearAllVariables()" disabled>Clear All</button>
+
+                            <div class="chart-dropdown-group area-dropdown">
                                 <span class="chart-label">Variable</span>
                                 <select id="chart-var-select" class="chart-select">
+                                    <option value="" selected disabled hidden style="display:none"></option>
+                                    
                                     <optgroup label="Power Input">
                                         <option value="vsd_supply_voltage">Supply Voltage</option>
                                     </optgroup>
@@ -623,23 +640,20 @@
                                     </optgroup>
                                 </select>
                             </div>
+                            
+                            <button class="btn-standard area-add" onclick="addVariableToChart()">Add Variable</button>
+                            <button id="btn-remove-var" class="btn-standard area-remove" onclick="removeVariableFromChart()" disabled>Remove</button>
+                        </div>
 
-                            <div style="display: flex; gap: 10px;">
-                                <button class="btn-standard" onclick="addVariableToChart()">Add Variable</button>
-                                <button id="btn-remove-var" class="btn-standard" onclick="removeVariableFromChart()" disabled>Remove Variable</button>
-                                <button id="btn-clear-vars" class="btn-standard" onclick="clearAllVariables()" disabled>Clear Variables</button>
-                            </div>
+                        <div class="vertical-separator"></div>
 
-                            <div style="width: 1px; height: 30px; background: #ccc; margin: 0 5px;"></div>
-
-                            <div style="display: flex; gap: 10px;">
-                                <button id="btn-chart-start" class="btn-standard" onclick="startChart()" disabled style="font-weight: 900; color: #006400;">
-                                    ▶ Start
-                                </button>
-                                <button id="btn-chart-stop" class="btn-standard" onclick="stopChart()" disabled style="font-weight: 900; color: #8b0000;">
-                                    ■ Stop
-                                </button>
-                            </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button id="btn-chart-start" class="btn-standard" onclick="startChart()" disabled style="font-weight: 900; color: #006400; height: 77px;">
+                                ▶ Start
+                            </button>
+                            <button id="btn-chart-stop" class="btn-standard" onclick="stopChart()" disabled style="font-weight: 900; color: #8b0000; height: 77px;">
+                                ■ Stop
+                            </button>
                         </div>
                     </div>
 
