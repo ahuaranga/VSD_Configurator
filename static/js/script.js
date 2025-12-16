@@ -2,25 +2,20 @@
 // 0. MAPA DE VINCULACIÓN Y VARIABLES GLOBALES
 // =========================================================
 const TAG_MAP = {
-    // --- GRUPO 1: ALARMAS ---
-    'overcurrent': 'vsd_ol_setpoint_0',   // Reg 717
-    'undercurrent': 'vsd_ul_setpoint',    // Reg 751
-    
-    // --- GRUPO 2: MONITORIZACIÓN VSD ---
-    'vsd_supply_voltage': 'vsd_supply_voltage', // Reg 2103
-    'vsd_temperature': 'vsd_temperature',       // Reg 2102
-
-    // --- GRUPO 3: DOWN HOLE TOOL ---
-    'dht_intake_pressure': 'dht_intake_pressure',       // Reg 2136
-    'dht_discharge_pressure': 'dht_discharge_pressure', // Reg 2137
-    'dht_intake_temp': 'dht_intake_temp',               // Reg 2139
-    'dht_motor_temp': 'dht_motor_temp',                 // Reg 2140
-    'dht_vibration': 'dht_vibration',                   // Reg 2141
-    'dht_active_leakage': 'dht_active_leakage',         // Reg 2142
-    'dht_cz': 'dht_cz',                                 // Reg 2144
-    'dht_cf': 'dht_cf',                                 // Reg 2145
-    'dht_passive_leakage': 'dht_passive_leakage',       // Reg 2147
-    'dht_diff_pressure': 'dht_diff_pressure'            // Reg 2161
+    'overcurrent': 'vsd_ol_setpoint_0',
+    'undercurrent': 'vsd_ul_setpoint',
+    'vsd_supply_voltage': 'vsd_supply_voltage',
+    'vsd_temperature': 'vsd_temperature',
+    'dht_intake_pressure': 'dht_intake_pressure',
+    'dht_discharge_pressure': 'dht_discharge_pressure',
+    'dht_intake_temp': 'dht_intake_temp',
+    'dht_motor_temp': 'dht_motor_temp',
+    'dht_vibration': 'dht_vibration',
+    'dht_active_leakage': 'dht_active_leakage',
+    'dht_cz': 'dht_cz',
+    'dht_cf': 'dht_cf',
+    'dht_passive_leakage': 'dht_passive_leakage',
+    'dht_diff_pressure': 'dht_diff_pressure'
 };
 
 const UNIT_MAP = {
@@ -40,7 +35,6 @@ const UNIT_MAP = {
     'dht_diff_pressure': 'psi'
 };
 
-// Configuración por defecto
 let savedConfig = {
     port: null,
     baudrate: 19200,
@@ -55,21 +49,13 @@ let pollingInterval = null;
 let isCommActive = false;      
 let pollErrorCount = 0;        
 
-// --- VARIABLES GLOBALES DEL GRAFICADOR ---
 let myChart = null;          
 let isCharting = false;      
 let chartInterval = null;    
-let chartPollingRate = 1000; // Valor por defecto (1 segundo)
+let chartPollingRate = 1000; 
 
-// --- DATOS DEL MENÚ ---
 const menuData = [
-    { 
-        id: 1, name: "VSD", 
-        subItems: [
-            "Operator", "Summary", "Alarms", "Speed", "Time", 
-            "Configure", "Expert", "Gas Lock", "PMM Configure", "PMM Configure 2", "Diagnostics"
-        ] 
-    },
+    { id: 1, name: "VSD", subItems: ["Operator", "Summary", "Alarms", "Speed", "Time", "Configure", "Expert", "Gas Lock", "PMM Configure", "PMM Configure 2", "Diagnostics"] },
     { id: 2, name: "DHT", subItems: ["Status", "Settings"] },
     { id: 3, name: "Power Analyzer", subItems: ["Voltage", "Current", "Power"] },
     { id: 4, name: "IO", subItems: ["Inputs", "Outputs"] },
@@ -79,7 +65,6 @@ const menuData = [
     { id: 8, name: "Controller", subItems: [] }
 ];
 
-// Referencias DOM Globales
 const mainMenu = document.getElementById('mainMenu');
 const subMenu = document.getElementById('subMenu');
 const mainList = document.getElementById('mainList');
@@ -93,18 +78,12 @@ let currentViewRows = [];
 let currentFocusIndex = 0;
 let currentEditingId = '';
 
-// =========================================================
-// 1. MANEJO DE TECLADO Y MOUSE
-// =========================================================
 document.addEventListener('keydown', (e) => {
-    // Bloquear teclado si hay modales abiertos
     const alarmOpen = document.getElementById('alarm-modal').style.display === 'flex';
     const configOpen = document.getElementById('config-modal').style.display === 'flex';
     const statusOpen = document.getElementById('status-modal').style.display === 'flex';
     
     if (isMenuOpen || currentViewRows.length === 0 || alarmOpen || configOpen || statusOpen) return;
-    
-    // Evitar scroll con flechas
     if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) e.preventDefault();
 
     if (e.key === 'ArrowDown') moveFocus(1);
@@ -116,18 +95,15 @@ document.addEventListener('keydown', (e) => {
 function initViewNavigation(viewElement) {
     currentViewRows = Array.from(viewElement.querySelectorAll('.form-row'));
     let initialIndex = 0;
-    
     const staticRow = viewElement.querySelector('.highlight-cyan');
     if (staticRow) {
         initialIndex = currentViewRows.indexOf(staticRow);
         staticRow.classList.remove('highlight-cyan');
     }
-
     currentViewRows.forEach((row, index) => {
         row.onclick = null; 
         row.addEventListener('click', () => setActiveRow(index));
     });
-
     if (currentViewRows.length > 0) setTimeout(() => setActiveRow(initialIndex), 10);
 }
 
@@ -177,21 +153,15 @@ function jumpBlock(direction) {
     if (found) setActiveRow(targetIndex);
 }
 
-// =========================================================
-// 2. MODAL ALARMAS (Lectura/Escritura Real + Lógica UI)
-// =========================================================
 function openAlarmModal(idSuffix, titleText) {
     currentEditingId = idSuffix;
     document.getElementById('modal-title').innerText = titleText || "Configuración";
-
     const maintRow = document.getElementById('row-maint-bypass'); 
     const startRow = document.getElementById('row-start-bypass'); 
     const btnCurve = document.getElementById('btn-edit-curve');   
-
     if(maintRow) maintRow.style.display = 'none';
     if(startRow) startRow.style.display = 'flex'; 
     if(btnCurve) btnCurve.style.display = 'block'; 
-
     if (idSuffix === 'undercurrent') {
         if(maintRow) maintRow.style.display = 'flex';
         if(btnCurve) btnCurve.style.display = 'none';
@@ -199,12 +169,9 @@ function openAlarmModal(idSuffix, titleText) {
         if(startRow) startRow.style.display = 'none'; 
         if(btnCurve) btnCurve.style.display = 'none';
     }
-
     const valEl = document.getElementById('val-' + idSuffix);
     const actEl = document.getElementById('act-' + idSuffix);
-
     if(valEl) document.getElementById('modal-setpoint').value = valEl.innerText;
-    
     const select = document.getElementById('modal-action');
     if(actEl) {
         const currentAct = actEl.innerText;
@@ -224,20 +191,15 @@ function closeAlarmModal() {
 
 function saveAlarmChanges() {
     if (!currentEditingId) return;
-
     const newSetpoint = document.getElementById('modal-setpoint').value;
     const actionSelect = document.getElementById('modal-action');
     const selectedAction = actionSelect.options[actionSelect.selectedIndex].value;
     const modbusID = TAG_MAP[currentEditingId]; 
-
     if (modbusID && isCommActive) {
         fetch('/api/write', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                id: modbusID,
-                value: newSetpoint
-            })
+            body: JSON.stringify({ id: modbusID, value: newSetpoint })
         })
         .then(response => response.json())
         .then(data => {
@@ -253,7 +215,6 @@ function saveAlarmChanges() {
             }
         })
         .catch(err => alert("Error de comunicación con el Servidor: " + err));
-
     } else {
         const valEl = document.getElementById('val-' + currentEditingId);
         const actEl = document.getElementById('act-' + currentEditingId);
@@ -264,15 +225,10 @@ function saveAlarmChanges() {
     }
 }
 
-// =========================================================
-// 3. COMUNICACIÓN Y POLLING
-// =========================================================
-
 function openConfigModal() {
     document.getElementById('config-modal').style.display = 'flex';
     const portSelect = document.getElementById('serial-port');
     portSelect.innerHTML = '<option value="" disabled selected>Buscando puertos...</option>';
-
     fetch('/api/ports')
         .then(response => response.json())
         .then(data => {
@@ -293,16 +249,11 @@ function openConfigModal() {
         .catch(() => { portSelect.innerHTML = '<option>Error cargando puertos</option>'; });
 }
 
-function closeConfigModal() {
-    document.getElementById('config-modal').style.display = 'none';
-}
+function closeConfigModal() { document.getElementById('config-modal').style.display = 'none'; }
 
 function readConfigFromDOM() {
     const port = document.getElementById('serial-port').value;
-    if (!port) {
-        alert("Selecciona un puerto válido.");
-        return false;
-    }
+    if (!port) { alert("Selecciona un puerto válido."); return false; }
     savedConfig.port = port;
     savedConfig.baudrate = document.getElementById('serial-baud').value;
     savedConfig.bytesize = document.getElementById('serial-databits').value;
@@ -312,21 +263,11 @@ function readConfigFromDOM() {
     return true;
 }
 
-function applyConfigParams() {
-    if(readConfigFromDOM()) {
-        console.log("Configuración aplicada en memoria (Apply).");
-    }
-}
-
-function okConfigParams() {
-    if(readConfigFromDOM()) {
-        closeConfigModal();
-    }
-}
+function applyConfigParams() { if(readConfigFromDOM()) console.log("Configuración aplicada."); }
+function okConfigParams() { if(readConfigFromDOM()) closeConfigModal(); }
 
 function startCommunication() {
-    if (!savedConfig.port) return alert("Primero configure el puerto usando el botón de Configuración.");
-
+    if (!savedConfig.port) return alert("Primero configure el puerto.");
     const statusModal = document.getElementById('status-modal');
     const progressBar = document.getElementById('progress-fill');
     const statusText = document.getElementById('status-text');
@@ -340,10 +281,7 @@ function startCommunication() {
 
     let width = 0;
     connectionInterval = setInterval(() => {
-        if(width < 90) {
-            width += 5;
-            progressBar.style.width = width + '%';
-        }
+        if(width < 90) { width += 5; progressBar.style.width = width + '%'; }
     }, 50);
 
     fetch('/api/connect', {
@@ -355,7 +293,6 @@ function startCommunication() {
     .then(data => {
         clearInterval(connectionInterval);
         progressBar.style.width = '100%';
-        
         if(data.status === 'success') {
             setTopLed(true);
             isCommActive = true;
@@ -385,14 +322,11 @@ function startCommunication() {
     });
 }
 
-function closeStatusModal() {
-    document.getElementById('status-modal').style.display = 'none';
-}
+function closeStatusModal() { document.getElementById('status-modal').style.display = 'none'; }
 
 function stopCommunication() {
     stopPolling();
     if(isCharting) stopChart();
-
     fetch('/api/disconnect', { method: 'POST' })
     .then(r => r.json())
     .then(data => {
@@ -407,11 +341,9 @@ function stopCommunication() {
 function handleLostConnection() {
     stopPolling();
     if(isCharting) stopChart();
-    
     isCommActive = false;
     setTopLed(false);
     updateChartButtons();
-    
     fetch('/api/disconnect', { method: 'POST' }).catch(() => {});
     alert("ERROR: Conexión perdida con el dispositivo.\nVerifique el cable.");
 }
@@ -430,7 +362,6 @@ function pollActiveView() {
     if (!isCommActive) return;
     let idsToRead = [];
     let mapIdToSuffix = {};
-
     for (const [suffix, modbusID] of Object.entries(TAG_MAP)) {
         const el = document.getElementById('val-' + suffix);
         if (el && el.offsetParent !== null) {
@@ -438,18 +369,13 @@ function pollActiveView() {
             mapIdToSuffix[modbusID] = suffix;
         }
     }
-
     if (idsToRead.length === 0) return;
-
     fetch('/api/read_batch', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ ids: idsToRead })
     })
-    .then(r => {
-        if (!r.ok) throw new Error("Device Unresponsive");
-        return r.json();
-    })
+    .then(r => { if (!r.ok) throw new Error("Device Unresponsive"); return r.json(); })
     .then(data => {
         pollErrorCount = 0; 
         for (const [modbusID, value] of Object.entries(data)) {
@@ -463,9 +389,7 @@ function pollActiveView() {
     .catch(err => {
         console.error("Polling error:", err);
         pollErrorCount++;
-        if (pollErrorCount >= 3) {
-            handleLostConnection();
-        }
+        if (pollErrorCount >= 3) { handleLostConnection(); }
     });
 }
 
@@ -481,9 +405,6 @@ function setTopLed(isConnected) {
     }
 }
 
-// =========================================================
-// 4. SISTEMA DE MENÚ Y NAVEGACIÓN
-// =========================================================
 function toggleMenuSystem() { isMenuOpen = !isMenuOpen; updateMenuVisibility(); }
 
 function goHome() {
@@ -495,25 +416,65 @@ function goHome() {
     currentViewRows = [];
 }
 
-function downloadConfig() {
-    alert("Funcionalidad de descarga de reporte en desarrollo.");
-}
+function downloadConfig() { alert("Funcionalidad de descarga de reporte en desarrollo."); }
 
-// =========================================================
-// 5. LOGICA DEL GRAFICADOR (Chart.js + Dual Axis + Sampling)
-// =========================================================
+// --- NUEVA FUNCIÓN: GESTIÓN DE LEYENDA HTML PARTIDA ---
+function updateCustomLegend() {
+    if (!myChart) return;
+
+    const leftContainer = document.getElementById('legend-left');
+    const rightContainer = document.getElementById('legend-right');
+    
+    // Limpiamos contenido previo
+    leftContainer.innerHTML = '';
+    rightContainer.innerHTML = '';
+
+    // Recorremos los datasets del gráfico
+    myChart.data.datasets.forEach((dataset, index) => {
+        // Obtenemos último valor para mostrar
+        const lastValue = dataset.data.length > 0 ? dataset.data[dataset.data.length - 1] : '--';
+        const axisLabel = dataset.yAxisID === 'y' ? '[L]' : '[R]';
+        
+        // Creamos el elemento HTML de la leyenda
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        if (!myChart.isDatasetVisible(index)) item.classList.add('hidden'); // Estilo tachado si está oculto
+
+        // Acción al hacer clic: Ocultar/Mostrar serie en la gráfica
+        item.onclick = () => {
+            myChart.setDatasetVisibility(index, !myChart.isDatasetVisible(index));
+            myChart.update();
+            updateCustomLegend(); // Redibujar leyenda para actualizar estado tachado
+        };
+
+        // Cajita de color
+        const colorBox = document.createElement('span');
+        colorBox.className = 'legend-color-box';
+        colorBox.style.backgroundColor = dataset.borderColor;
+        colorBox.style.border = `1px solid ${dataset.borderColor}`;
+
+        // Texto
+        const text = document.createElement('span');
+        text.innerText = `${axisLabel} ${dataset.origLabel}: ${lastValue} ${dataset.unit}`;
+
+        item.appendChild(colorBox);
+        item.appendChild(text);
+
+        // DECISIÓN CLAVE: ¿A qué lado va?
+        if (dataset.yAxisID === 'y') {
+            leftContainer.appendChild(item); // Eje Izquierdo -> Contenedor Izquierdo
+        } else {
+            rightContainer.appendChild(item); // Eje Derecho -> Contenedor Derecho
+        }
+    });
+}
 
 function initChart() {
     const ctx = document.getElementById('realtimeChart').getContext('2d');
-    
     if (myChart) myChart.destroy();
-
     myChart = new Chart(ctx, {
         type: 'line',
-        data: {
-            labels: [], 
-            datasets: [] 
-        },
+        data: { labels: [], datasets: [] },
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -521,46 +482,13 @@ function initChart() {
             interaction: { mode: 'index', intersect: false },
             plugins: {
                 tooltip: { enabled: true, mode: 'index', position: 'nearest' },
-                legend: {
-                    display: true,
-                    position: 'bottom', 
-                    labels: {
-                        boxWidth: 12, 
-                        font: { size: 12 },
-                        generateLabels: function(chart) {
-                            const datasets = chart.data.datasets;
-                            return datasets.map((dataset, i) => {
-                                const lastValue = dataset.data.length > 0 ? dataset.data[dataset.data.length - 1] : '--';
-                                const unit = dataset.unit || '';
-                                const axisLabel = dataset.yAxisID === 'y' ? '[L]' : '[R]';
-                                return {
-                                    text: `${axisLabel} ${lastValue} ${unit} - ${dataset.origLabel}`,
-                                    fillStyle: dataset.borderColor,
-                                    strokeStyle: dataset.borderColor,
-                                    lineWidth: 2,
-                                    hidden: !chart.isDatasetVisible(i),
-                                    datasetIndex: i
-                                };
-                            });
-                        }
-                    }
-                }
+                // --- APAGAMOS LEYENDA NATIVA ---
+                legend: { display: false } 
             },
             scales: {
                 x: { display: true, title: { display: true, text: 'Time' } },
-                y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    title: { display: true, text: 'Left Axis' }
-                },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    grid: { drawOnChartArea: false },
-                    title: { display: true, text: 'Right Axis' }
-                }
+                y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Left Axis' } },
+                y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Right Axis' } }
             }
         }
     });
@@ -569,38 +497,24 @@ function initChart() {
 function getRandomColor() {
     const letters = '0123456789ABCDEF';
     let color = '#';
-    for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-    }
+    for (let i = 0; i < 6; i++) { color += letters[Math.floor(Math.random() * 16)]; }
     return color;
 }
 
 function openChartModule() {
     const target = document.getElementById('view-chart-module');
     if (target.style.display === 'block') return; 
-
     document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
     target.style.display = 'block';
-    
     document.getElementById('breadcrumb').innerText = "> VSD > Speed"; 
     isMenuOpen = false;
     updateMenuVisibility();
     Array.from(mainList.children).forEach(el => el.classList.remove('selected'));
     Array.from(subList.children).forEach(el => el.classList.remove('selected'));
-    
-    if (!myChart) {
-        setTimeout(initChart, 100);
-    } else {
-        myChart.resize();
-        myChart.update();
-    }
-    
+    if (!myChart) { setTimeout(initChart, 100); } else { myChart.resize(); myChart.update(); }
     const list = document.getElementById('chart-added-list');
     const btnClear = document.getElementById('btn-clear-vars');
-    if (list && btnClear) {
-        btnClear.disabled = (list.children.length === 0);
-    }
-
+    if (list && btnClear) { btnClear.disabled = (list.children.length === 0); }
     updateChartButtons();
 }
 
@@ -616,10 +530,7 @@ function updateMenuVisibility() {
 function showSection(sectionId) {
     document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
     const target = document.getElementById(sectionId);
-    if(target) {
-        target.style.display = 'block';
-        initViewNavigation(target);
-    }
+    if(target) { target.style.display = 'block'; initViewNavigation(target); }
 }
 
 function loadView(viewName) {
@@ -674,15 +585,10 @@ function updateClock() {
     document.getElementById('clock').innerText = now.toLocaleString('en-GB');
 }
 
-// =========================================================
-// 6. FUNCIONALIDAD DROPDOWN
-// =========================================================
 function initDropdownLogic() {
     const selects = document.querySelectorAll('select.dynamic-select'); 
     selects.forEach(sel => {
-        Array.from(sel.options).forEach(opt => {
-            if (!opt.dataset.orig) opt.dataset.orig = opt.text;
-        });
+        Array.from(sel.options).forEach(opt => { if (!opt.dataset.orig) opt.dataset.orig = opt.text; });
         const showNumbers = () => { Array.from(sel.options).forEach(opt => { opt.text = opt.dataset.orig; }); };
         const hideNumbers = () => {
             Array.from(sel.options).forEach(opt => opt.text = opt.dataset.orig);
@@ -698,21 +604,13 @@ function initDropdownLogic() {
     });
 }
 
-// =========================================================
-// 7. FUNCIONALIDAD CAMPO DINÁMICO
-// =========================================================
 function toggleExtendedFreq() {
     const select = document.getElementById('pmm-ext-speed-mode');
     const row = document.getElementById('row-ext-base-freq');
-    if (select && row) {
-        row.style.display = (select.value === "1") ? 'flex' : 'none';
-    }
+    if (select && row) { row.style.display = (select.value === "1") ? 'flex' : 'none'; }
     updateConfigLocks();
 }
 
-// =========================================================
-// 8. FUNCIONALIDAD BLOQUEO
-// =========================================================
 function togglePMMFields() {
     const modeSelect = document.getElementById('pmm-setup-mode');
     if (!modeSelect) return;
@@ -720,41 +618,23 @@ function togglePMMFields() {
     const container = document.getElementById('view-pmm-configure-2');
     const fieldset = container.querySelector('fieldset.group-box'); 
     const inputs = fieldset.querySelectorAll('input, select');
-
-    inputs.forEach(input => {
-        if (input.id === 'pmm-setup-mode') return;
-        input.disabled = !isManual;
-    });
+    inputs.forEach(input => { if (input.id === 'pmm-setup-mode') return; input.disabled = !isManual; });
     updateConfigLocks();
 }
 
-// =========================================================
-// 9. FUNCIONALIDAD BLOQUEO CRUZADO
-// =========================================================
 function updateConfigLocks() {
     const setupMode = document.getElementById('pmm-setup-mode').value; 
     const extMode = document.getElementById('pmm-ext-speed-mode').value; 
-
     const transRatio = document.getElementById('cfg-transformer-ratio');
     const vsdSpeed = document.getElementById('cfg-vsd-speed');
     const volts = document.getElementById('cfg-base-volts');
-
     if(!transRatio || !vsdSpeed || !volts) return;
-
     if (setupMode === '2' && extMode === '1') {
-        transRatio.disabled = true;
-        vsdSpeed.disabled = true;
-        volts.disabled = true;
-        transRatio.classList.add('input-disabled');
-        vsdSpeed.classList.add('input-disabled');
-        volts.classList.add('input-disabled');
+        transRatio.disabled = true; vsdSpeed.disabled = true; volts.disabled = true;
+        transRatio.classList.add('input-disabled'); vsdSpeed.classList.add('input-disabled'); volts.classList.add('input-disabled');
     } else {
-        transRatio.disabled = false;
-        vsdSpeed.disabled = false;
-        volts.disabled = false;
-        transRatio.classList.remove('input-disabled');
-        vsdSpeed.classList.remove('input-disabled');
-        volts.classList.remove('input-disabled');
+        transRatio.disabled = false; vsdSpeed.disabled = false; volts.disabled = false;
+        transRatio.classList.remove('input-disabled'); vsdSpeed.classList.remove('input-disabled'); volts.classList.remove('input-disabled');
     }
 }
 
@@ -769,7 +649,6 @@ function init() {
     setInterval(updateClock, 1000); 
     updateClock(); 
     goHome();
-    
     setTimeout(initDropdownLogic, 100); 
     setTimeout(toggleExtendedFreq, 100); 
     setTimeout(togglePMMFields, 100); 
@@ -778,14 +657,9 @@ function init() {
 
 init();
 
-// --- B. GESTIÓN DE VARIABLES Y EJES + SAMPLING RATE ---
-
-// Función para actualizar velocidad en tiempo real
 function updateSamplingRate() {
     const select = document.getElementById('chart-sampling-select');
     chartPollingRate = parseInt(select.value);
-
-    // Si la gráfica ya está corriendo, reiniciamos el intervalo con la nueva velocidad
     if (isCharting && chartInterval) {
         clearInterval(chartInterval);
         chartInterval = setInterval(updateChartData, chartPollingRate);
@@ -805,62 +679,45 @@ function addVariableToChart() {
     const selectedValue = select.value;
 
     const existingItems = Array.from(list.children).map(li => li.dataset.value);
-    if (existingItems.includes(selectedValue)) {
-        return alert("Esta variable ya está agregada.");
-    }
+    if (existingItems.includes(selectedValue)) { return alert("Esta variable ya está agregada."); }
 
-    // Calculamos el tiempo en segundos para mostrarlo en la lista
     const timeSec = chartPollingRate / 1000;
-
-    // Crear elemento de lista con Indicador Visual [L] por defecto y tiempo actual
     const li = document.createElement('li');
     li.dataset.value = selectedValue;
-    li.dataset.axis = 'y'; // Por defecto Eje Izquierdo
+    li.dataset.axis = 'y'; 
     li.innerText = `[L] ${selectedText} (${timeSec} s)`; 
     li.onclick = function() { selectChartItem(this); };
     list.appendChild(li);
 
-    // --- BLOQUEO DEL SELECTOR DE TIEMPO ---
-    if (samplingSelect) {
-        samplingSelect.disabled = true;
-        samplingSelect.classList.add('input-disabled'); // Opcional para estilo visual
-    }
-    // --------------------------------------
+    if (samplingSelect) { samplingSelect.disabled = true; samplingSelect.classList.add('input-disabled'); }
 
     selectedOption.disabled = true;
     selectedOption.hidden = true;
     selectedOption.style.display = 'none';
-    select.selectedIndex = -1; 
+    
+    // --- FORZAR QUE EL SELECTOR VUELVA AL PLACEHOLDER OCULTO ---
+    select.value = ""; 
+    // -----------------------------------------------------------
 
     if(btnClear) btnClear.disabled = false;
-
     if (!myChart) initChart();
 
     const newDataset = {
-        label: selectedText,
-        origLabel: selectedText,
-        unit: UNIT_MAP[selectedValue] || '',
-        data: [], 
-        borderColor: getRandomColor(),
-        borderWidth: 2,
-        fill: false,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        yAxisID: 'y' // Asignación inicial al eje Izquierdo
+        label: selectedText, origLabel: selectedText, unit: UNIT_MAP[selectedValue] || '',
+        data: [], borderColor: getRandomColor(), borderWidth: 2, fill: false,
+        pointRadius: 0, pointHoverRadius: 5, yAxisID: 'y' 
     };
-
     myChart.data.datasets.push(newDataset);
     myChart.update();
+    updateCustomLegend();
 }
 
 function selectChartItem(element) {
     const list = document.getElementById('chart-added-list');
     const btnRemove = document.getElementById('btn-remove-var');
     const btnSwap = document.getElementById('btn-swap-axis');
-
     Array.from(list.children).forEach(child => child.classList.remove('selected'));
     element.classList.add('selected');
-    
     btnRemove.disabled = false;
     btnSwap.disabled = false; 
 }
@@ -868,27 +725,19 @@ function selectChartItem(element) {
 function swapVariableAxis() {
     const list = document.getElementById('chart-added-list');
     const selectedItem = list.querySelector('.selected');
-    
     if (!selectedItem || !myChart) return;
-
-    // Regex para limpiar el nombre y quitar [L]/[R] y el tiempo (x s)
     const textInLi = selectedItem.innerText;
     const textClean = textInLi.replace(/^\[[LR]\]\s+/, '').replace(/\s\(\d+(\.\d+)?\s?s\)$/, '');
-
     const dataset = myChart.data.datasets.find(ds => ds.origLabel === textClean);
     const timeSec = chartPollingRate / 1000;
-    
     if (dataset) {
         if (dataset.yAxisID === 'y') {
-            dataset.yAxisID = 'y1'; // Mover a Derecha
-            selectedItem.dataset.axis = 'y1';
-            selectedItem.innerText = `[R] ${textClean} (${timeSec} s)`;
+            dataset.yAxisID = 'y1'; selectedItem.dataset.axis = 'y1'; selectedItem.innerText = `[R] ${textClean} (${timeSec} s)`;
         } else {
-            dataset.yAxisID = 'y'; // Mover a Izquierda
-            selectedItem.dataset.axis = 'y';
-            selectedItem.innerText = `[L] ${textClean} (${timeSec} s)`;
+            dataset.yAxisID = 'y'; selectedItem.dataset.axis = 'y'; selectedItem.innerText = `[L] ${textClean} (${timeSec} s)`;
         }
         myChart.update();
+        updateCustomLegend();
     }
 }
 
@@ -897,12 +746,11 @@ function removeVariableFromChart() {
     const btnRemove = document.getElementById('btn-remove-var');
     const btnSwap = document.getElementById('btn-swap-axis');
     const btnClear = document.getElementById('btn-clear-vars');
-    const samplingSelect = document.getElementById('chart-sampling-select'); // Referencia
+    const samplingSelect = document.getElementById('chart-sampling-select'); 
     const selectedItem = list.querySelector('.selected');
     
     if (selectedItem) {
         const valToRemove = selectedItem.dataset.value; 
-        
         const select = document.getElementById('chart-var-select');
         for (let i = 0; i < select.options.length; i++) {
             if (select.options[i].value === valToRemove) {
@@ -912,32 +760,18 @@ function removeVariableFromChart() {
                 break;
             }
         }
-
         if (myChart) {
             const textInLi = selectedItem.innerText;
-            // Regex para limpiar el nombre y encontrar el dataset
             const textClean = textInLi.replace(/^\[[LR]\]\s+/, '').replace(/\s\(\d+(\.\d+)?\s?s\)$/, '');
             const datasetIndex = myChart.data.datasets.findIndex(ds => ds.origLabel === textClean);
-            
-            if (datasetIndex !== -1) {
-                myChart.data.datasets.splice(datasetIndex, 1);
-                myChart.update();
-            }
+            if (datasetIndex !== -1) { myChart.data.datasets.splice(datasetIndex, 1); myChart.update(); updateCustomLegend(); }
         }
-        
         list.removeChild(selectedItem);
-        btnRemove.disabled = true;
-        btnSwap.disabled = true;
-
-        // --- DESBLOQUEO SI LA LISTA ESTÁ VACÍA ---
+        btnRemove.disabled = true; btnSwap.disabled = true;
         if (list.children.length === 0) {
             if (btnClear) btnClear.disabled = true;
-            if (samplingSelect) {
-                samplingSelect.disabled = false;
-                samplingSelect.classList.remove('input-disabled');
-            }
+            if (samplingSelect) { samplingSelect.disabled = false; samplingSelect.classList.remove('input-disabled'); }
         }
-        // ----------------------------------------
     }
 }
 
@@ -947,65 +781,41 @@ function clearAllVariables() {
     const btnRemove = document.getElementById('btn-remove-var');
     const btnSwap = document.getElementById('btn-swap-axis');
     const btnClear = document.getElementById('btn-clear-vars');
-    const samplingSelect = document.getElementById('chart-sampling-select'); // Referencia
+    const samplingSelect = document.getElementById('chart-sampling-select'); 
 
-    for (let i = 0; i < select.options.length; i++) {
+    // --- CORRECCIÓN DEL BUCLE: EMPEZAR EN 1 PARA NO TOCAR EL PLACEHOLDER ---
+    for (let i = 1; i < select.options.length; i++) {
         select.options[i].disabled = false;
         select.options[i].hidden = false;
         select.options[i].style.display = '';
     }
-    select.selectedIndex = -1;
+    // Forzar selección vacía de nuevo
+    select.value = ""; 
+    // -----------------------------------------------------------------------
 
     list.innerHTML = '';
-
-    // --- DESBLOQUEO SIEMPRE AL LIMPIAR TODO ---
-    if (samplingSelect) {
-        samplingSelect.disabled = false;
-        samplingSelect.classList.remove('input-disabled');
-    }
-    // ------------------------------------------
-
-    if (myChart) {
-        myChart.data.datasets = [];
-        myChart.update();
-    }
-
-    btnRemove.disabled = true;
-    btnSwap.disabled = true;
-    btnClear.disabled = true;
+    if (samplingSelect) { samplingSelect.disabled = false; samplingSelect.classList.remove('input-disabled'); }
+    if (myChart) { myChart.data.datasets = []; myChart.update(); updateCustomLegend(); }
+    btnRemove.disabled = true; btnSwap.disabled = true; btnClear.disabled = true;
 }
-
-// --- C. ESTADO START / STOP ---
 
 function updateChartButtons() {
     const btnStart = document.getElementById('btn-chart-start');
     const btnStop = document.getElementById('btn-chart-stop');
-
     if (!btnStart || !btnStop) return; 
-
-    if (!isCommActive) {
-        btnStart.disabled = true;
-        btnStop.disabled = true;
-    } else {
-        if (isCharting) {
-            btnStart.disabled = true;
-            btnStop.disabled = false;
-        } else {
-            btnStart.disabled = false;
-            btnStop.disabled = true;
-        }
+    if (!isCommActive) { btnStart.disabled = true; btnStop.disabled = true; }
+    else {
+        if (isCharting) { btnStart.disabled = true; btnStop.disabled = false; }
+        else { btnStart.disabled = false; btnStop.disabled = true; }
     }
 }
 
 function startChart() {
     if (!isCommActive) return alert("No hay conexión.");
-    if (document.getElementById('chart-added-list').children.length === 0) {
-        return alert("Agregue al menos una variable.");
-    }
+    if (document.getElementById('chart-added-list').children.length === 0) return alert("Agregue al menos una variable.");
     isCharting = true;
     updateChartButtons();
     if (chartInterval) clearInterval(chartInterval);
-    // Usamos el intervalo definido globalmente
     chartInterval = setInterval(updateChartData, chartPollingRate);
 }
 
@@ -1018,10 +828,8 @@ function stopChart() {
 
 function updateChartData() {
     if (!isCharting || !isCommActive || !myChart) return;
-
     const listItems = Array.from(document.getElementById('chart-added-list').children);
     const idsToRead = listItems.map(li => li.dataset.value);
-
     if (idsToRead.length === 0) return;
 
     fetch('/api/read_batch', {
@@ -1029,42 +837,25 @@ function updateChartData() {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ ids: idsToRead })
     })
-    .then(r => {
-        if (!r.ok) throw new Error("Device Unresponsive");
-        return r.json();
-    })
+    .then(r => { if (!r.ok) throw new Error("Device Unresponsive"); return r.json(); })
     .then(data => {
         pollErrorCount = 0; 
         const nowLabel = new Date().toLocaleTimeString(); 
-
-        // ==========================================
-        // MODO "INFINITE HISTORY" - Sin borrado de datos
-        // ==========================================
-        // No hay shift() aquí para 'labels'
-        
         myChart.data.labels.push(nowLabel);
-
         myChart.data.datasets.forEach(dataset => {
             const matchingLi = listItems.find(li => li.innerText.includes(dataset.origLabel));
-            
             if (matchingLi) {
                 const modbusID = matchingLi.dataset.value;
                 const value = data[modbusID];
-
-                if (value !== null && value !== undefined) {
-                    // No hay shift() aquí para 'data'
-                    dataset.data.push(value);
-                }
+                if (value !== null && value !== undefined) { dataset.data.push(value); }
             }
         });
-
         myChart.update();
+        updateCustomLegend();
     })
     .catch(err => {
         console.error("Chart polling error:", err);
         pollErrorCount++;
-        if (pollErrorCount >= 3) {
-            handleLostConnection();
-        }
+        if (pollErrorCount >= 3) { handleLostConnection(); }
     });
 }
