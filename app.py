@@ -1,3 +1,4 @@
+
 import os
 import sys
 import webbrowser
@@ -166,11 +167,11 @@ def read_batch():
 # -------------------------------------------------------------------------
 def open_browser():
     if not os.environ.get("WERKZEUG_RUN_MAIN"):
-        webbrowser.open_new('http://127.0.0.1:5000/')
+        webbrowser.open_new('http://127.0.0.1:5001/')
 
 
 if __name__ == "__main__":
     init_db()
     Timer(1, open_browser).start()
     # threaded=True para manejar peticiones concurrentes, pero modbus_lock controla el puerto
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)

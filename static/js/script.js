@@ -228,13 +228,13 @@ function saveAlarmChanges() {
 function openConfigModal() {
     document.getElementById('config-modal').style.display = 'flex';
     const portSelect = document.getElementById('serial-port');
-    portSelect.innerHTML = '<option value="" disabled selected>Buscando puertos...</option>';
+    portSelect.innerHTML = '<option value="" disabled selected>Searching...</option>';
     fetch('/api/ports')
         .then(response => response.json())
         .then(data => {
             portSelect.innerHTML = '';
             if (data.length === 0) {
-                portSelect.add(new Option("No se detectaron puertos", "", true, true));
+                portSelect.add(new Option("No ports detected", "", true, true));
                 portSelect.disabled = true;
             } else {
                 portSelect.disabled = false;
@@ -246,14 +246,14 @@ function openConfigModal() {
                 if (!savedConfig.port) portSelect.selectedIndex = 0;
             }
         })
-        .catch(() => { portSelect.innerHTML = '<option>Error cargando puertos</option>'; });
+        .catch(() => { portSelect.innerHTML = '<option>Error loading ports</option>'; });
 }
 
 function closeConfigModal() { document.getElementById('config-modal').style.display = 'none'; }
 
 function readConfigFromDOM() {
     const port = document.getElementById('serial-port').value;
-    if (!port) { alert("Selecciona un puerto válido."); return false; }
+    if (!port) { alert("Please select a valid port."); return false; }
     savedConfig.port = port;
     savedConfig.baudrate = document.getElementById('serial-baud').value;
     savedConfig.bytesize = document.getElementById('serial-databits').value;
@@ -263,11 +263,11 @@ function readConfigFromDOM() {
     return true;
 }
 
-function applyConfigParams() { if(readConfigFromDOM()) console.log("Configuración aplicada."); }
+function applyConfigParams() { if(readConfigFromDOM()) console.log("Config applied."); }
 function okConfigParams() { if(readConfigFromDOM()) closeConfigModal(); }
 
 function startCommunication() {
-    if (!savedConfig.port) return alert("Primero configure el puerto.");
+    if (!savedConfig.port) return alert("Please configure the port first.");
     const statusModal = document.getElementById('status-modal');
     const progressBar = document.getElementById('progress-fill');
     const statusText = document.getElementById('status-text');
@@ -277,7 +277,7 @@ function startCommunication() {
     errorArea.style.display = 'none';
     progressBar.style.width = '0%';
     progressBar.style.backgroundColor = '#008000';
-    statusText.innerText = "Iniciando secuencia de conexión...";
+    statusText.innerText = "Starting connection sequence...";
 
     let width = 0;
     connectionInterval = setInterval(() => {
@@ -302,9 +302,9 @@ function startCommunication() {
             setTimeout(() => { statusModal.style.display = 'none'; }, 800);
         } else {
             progressBar.style.backgroundColor = '#c62828';
-            statusText.innerText = "Fallo en la conexión";
+            statusText.innerText = "Connection Failed";
             errorArea.style.display = 'block';
-            document.getElementById('error-message').innerText = data.message || "Error desconocido";
+            document.getElementById('error-message').innerText = data.message || "Unknown Error";
             setTopLed(false);
             isCommActive = false;
             updateChartButtons();
@@ -313,7 +313,7 @@ function startCommunication() {
     .catch(err => {
         clearInterval(connectionInterval);
         progressBar.style.backgroundColor = '#c62828';
-        statusText.innerText = "Error Crítico";
+        statusText.innerText = "Critical Error";
         errorArea.style.display = 'block';
         document.getElementById('error-message').innerText = err;
         setTopLed(false);
@@ -333,9 +333,9 @@ function stopCommunication() {
         setTopLed(false);
         isCommActive = false;
         updateChartButtons();
-        alert("Comunicación detenida y puerto cerrado.");
+        alert("Communication stopped and port closed.");
     })
-    .catch(err => alert("Error al desconectar: " + err));
+    .catch(err => alert("Error disconnecting: " + err));
 }
 
 function handleLostConnection() {
@@ -345,7 +345,7 @@ function handleLostConnection() {
     setTopLed(false);
     updateChartButtons();
     fetch('/api/disconnect', { method: 'POST' }).catch(() => {});
-    alert("ERROR: Conexión perdida con el dispositivo.\nVerifique el cable.");
+    alert("ERROR: Lost connection with device.\nCheck the cable.");
 }
 
 function startPolling() {
@@ -405,66 +405,78 @@ function setTopLed(isConnected) {
     }
 }
 
-function toggleMenuSystem() { isMenuOpen = !isMenuOpen; updateMenuVisibility(); }
+// =========================================================
+// GESTIÓN DE MENÚ Y BREADCRUMB (Actualizado)
+// =========================================================
+
+function toggleMenuSystem() { 
+    isMenuOpen = !isMenuOpen; 
+    
+    // Si abrimos el menú, cambiamos el breadcrumb a "Menu"
+    if (isMenuOpen) {
+        breadcrumb.innerText = "Menu";
+    } 
+    // Si lo cerramos pero no navegamos, podríamos revertir, pero 
+    // por simplicidad lo dejamos así hasta que el usuario elija algo.
+    
+    updateMenuVisibility(); 
+}
 
 function goHome() {
-    isMenuOpen = false; currentMainIndex = -1; currentSubIndex = -1;
+    isMenuOpen = false; 
+    currentMainIndex = -1; 
+    currentSubIndex = -1;
     Array.from(mainList.children).forEach(el => el.classList.remove('selected'));
     Array.from(subList.children).forEach(el => el.classList.remove('selected'));
-    breadcrumb.innerText = "Inicio";
-    updateMenuVisibility(); showSection('view-home');
+    
+    // Breadcrumb cambia a "Home"
+    breadcrumb.innerText = "Home";
+    
+    updateMenuVisibility(); 
+    showSection('view-home');
     currentViewRows = [];
 }
 
-function downloadConfig() { alert("Funcionalidad de descarga de reporte en desarrollo."); }
+function downloadConfig() { alert("Report download functionality in development."); }
 
-// --- NUEVA FUNCIÓN: GESTIÓN DE LEYENDA HTML PARTIDA ---
 function updateCustomLegend() {
     if (!myChart) return;
 
     const leftContainer = document.getElementById('legend-left');
     const rightContainer = document.getElementById('legend-right');
     
-    // Limpiamos contenido previo
     leftContainer.innerHTML = '';
     rightContainer.innerHTML = '';
 
-    // Recorremos los datasets del gráfico
     myChart.data.datasets.forEach((dataset, index) => {
-        // Obtenemos último valor para mostrar
         const lastValue = dataset.data.length > 0 ? dataset.data[dataset.data.length - 1] : '--';
         const axisLabel = dataset.yAxisID === 'y' ? '[L]' : '[R]';
         
-        // Creamos el elemento HTML de la leyenda
         const item = document.createElement('div');
         item.className = 'legend-item';
-        if (!myChart.isDatasetVisible(index)) item.classList.add('hidden'); // Estilo tachado si está oculto
+        if (!myChart.isDatasetVisible(index)) item.classList.add('hidden'); 
 
-        // Acción al hacer clic: Ocultar/Mostrar serie en la gráfica
         item.onclick = () => {
             myChart.setDatasetVisibility(index, !myChart.isDatasetVisible(index));
             myChart.update();
-            updateCustomLegend(); // Redibujar leyenda para actualizar estado tachado
+            updateCustomLegend(); 
         };
 
-        // Cajita de color
         const colorBox = document.createElement('span');
         colorBox.className = 'legend-color-box';
         colorBox.style.backgroundColor = dataset.borderColor;
         colorBox.style.border = `1px solid ${dataset.borderColor}`;
 
-        // Texto
         const text = document.createElement('span');
         text.innerText = `${axisLabel} ${dataset.origLabel}: ${lastValue} ${dataset.unit}`;
 
         item.appendChild(colorBox);
         item.appendChild(text);
 
-        // DECISIÓN CLAVE: ¿A qué lado va?
         if (dataset.yAxisID === 'y') {
-            leftContainer.appendChild(item); // Eje Izquierdo -> Contenedor Izquierdo
+            leftContainer.appendChild(item); 
         } else {
-            rightContainer.appendChild(item); // Eje Derecho -> Contenedor Derecho
+            rightContainer.appendChild(item); 
         }
     });
 }
@@ -482,7 +494,6 @@ function initChart() {
             interaction: { mode: 'index', intersect: false },
             plugins: {
                 tooltip: { enabled: true, mode: 'index', position: 'nearest' },
-                // --- APAGAMOS LEYENDA NATIVA ---
                 legend: { display: false } 
             },
             scales: {
@@ -506,7 +517,10 @@ function openChartModule() {
     if (target.style.display === 'block') return; 
     document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
     target.style.display = 'block';
-    document.getElementById('breadcrumb').innerText = "> VSD > Speed"; 
+    
+    // Breadcrumb cambia a "Chart"
+    document.getElementById('breadcrumb').innerText = "Chart"; 
+    
     isMenuOpen = false;
     updateMenuVisibility();
     Array.from(mainList.children).forEach(el => el.classList.remove('selected'));
@@ -554,6 +568,10 @@ function handleMainClick(index, element) {
     currentMainIndex = index; currentSubIndex = -1; 
     Array.from(mainList.children).forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
+    
+    // Breadcrumb: Menu > [Categoria]
+    document.getElementById('breadcrumb').innerText = `Menu > ${menuData[index].name}`;
+    
     renderSubMenu(menuData[index]);
 }
 
@@ -576,7 +594,10 @@ function handleSubClick(index, name, element) {
     Array.from(subList.children).forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
     const mainName = menuData[currentMainIndex].name;
-    document.getElementById('breadcrumb').innerText = `> ${mainName} > ${name}`;
+    
+    // Breadcrumb: Menu > [Categoria] > [SubItem]
+    document.getElementById('breadcrumb').innerText = `Menu > ${mainName} > ${name}`;
+    
     loadView(name);
 }
 
@@ -648,7 +669,13 @@ function init() {
     });
     setInterval(updateClock, 1000); 
     updateClock(); 
+    
+    // Primero vamos a Home para resetear todo
     goHome();
+    
+    // LUEGO, limpiamos el breadcrumb para que arranque vacío
+    document.getElementById('breadcrumb').innerText = "";
+    
     setTimeout(initDropdownLogic, 100); 
     setTimeout(toggleExtendedFreq, 100); 
     setTimeout(togglePMMFields, 100); 
@@ -679,7 +706,7 @@ function addVariableToChart() {
     const selectedValue = select.value;
 
     const existingItems = Array.from(list.children).map(li => li.dataset.value);
-    if (existingItems.includes(selectedValue)) { return alert("Esta variable ya está agregada."); }
+    if (existingItems.includes(selectedValue)) { return alert("This variable is already added."); }
 
     const timeSec = chartPollingRate / 1000;
     const li = document.createElement('li');
@@ -695,10 +722,8 @@ function addVariableToChart() {
     selectedOption.hidden = true;
     selectedOption.style.display = 'none';
     
-    // --- FORZAR QUE EL SELECTOR VUELVA AL PLACEHOLDER OCULTO ---
     select.value = ""; 
-    // -----------------------------------------------------------
-
+    
     if(btnClear) btnClear.disabled = false;
     if (!myChart) initChart();
 
@@ -783,15 +808,12 @@ function clearAllVariables() {
     const btnClear = document.getElementById('btn-clear-vars');
     const samplingSelect = document.getElementById('chart-sampling-select'); 
 
-    // --- CORRECCIÓN DEL BUCLE: EMPEZAR EN 1 PARA NO TOCAR EL PLACEHOLDER ---
     for (let i = 1; i < select.options.length; i++) {
         select.options[i].disabled = false;
         select.options[i].hidden = false;
         select.options[i].style.display = '';
     }
-    // Forzar selección vacía de nuevo
     select.value = ""; 
-    // -----------------------------------------------------------------------
 
     list.innerHTML = '';
     if (samplingSelect) { samplingSelect.disabled = false; samplingSelect.classList.remove('input-disabled'); }
@@ -811,8 +833,8 @@ function updateChartButtons() {
 }
 
 function startChart() {
-    if (!isCommActive) return alert("No hay conexión.");
-    if (document.getElementById('chart-added-list').children.length === 0) return alert("Agregue al menos una variable.");
+    if (!isCommActive) return alert("No connection.");
+    if (document.getElementById('chart-added-list').children.length === 0) return alert("Add at least one variable.");
     isCharting = true;
     updateChartButtons();
     if (chartInterval) clearInterval(chartInterval);
