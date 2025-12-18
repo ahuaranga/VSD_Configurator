@@ -266,6 +266,36 @@ function readConfigFromDOM() {
 function applyConfigParams() { if(readConfigFromDOM()) console.log("Config applied."); }
 function okConfigParams() { if(readConfigFromDOM()) closeConfigModal(); }
 
+// NUEVA FUNCIÓN MAESTRA PARA TOGGLE (Conectar/Desconectar)
+function toggleMasterCommunication() {
+    if (isCommActive) {
+        // Si está activo -> Paramos
+        stopCommunication();
+    } else {
+        // Si está inactivo -> Arrancamos
+        startCommunication();
+    }
+}
+
+// ACTUALIZA VISUALMENTE EL BOTÓN ÚNICO
+function updateMasterCommButton() {
+    const btn = document.getElementById('btn-master-comm');
+    
+    if (!btn) return;
+
+    if (isCommActive) {
+        // ESTADO: CONECTADO
+        btn.classList.remove('comm-btn-off');
+        btn.classList.add('comm-btn-on');
+        btn.title = "Disconnect";
+    } else {
+        // ESTADO: DESCONECTADO
+        btn.classList.remove('comm-btn-on');
+        btn.classList.add('comm-btn-off');
+        btn.title = "Connect";
+    }
+}
+
 function startCommunication() {
     if (!savedConfig.port) return alert("Please configure the port first.");
     const statusModal = document.getElementById('status-modal');
@@ -297,6 +327,7 @@ function startCommunication() {
             setTopLed(true);
             isCommActive = true;
             pollErrorCount = 0; 
+            updateMasterCommButton(); 
             startPolling();
             updateChartButtons();
             setTimeout(() => { statusModal.style.display = 'none'; }, 800);
@@ -307,6 +338,7 @@ function startCommunication() {
             document.getElementById('error-message').innerText = data.message || "Unknown Error";
             setTopLed(false);
             isCommActive = false;
+            updateMasterCommButton(); 
             updateChartButtons();
         }
     })
@@ -318,6 +350,7 @@ function startCommunication() {
         document.getElementById('error-message').innerText = err;
         setTopLed(false);
         isCommActive = false;
+        updateMasterCommButton(); 
         updateChartButtons();
     });
 }
@@ -332,6 +365,7 @@ function stopCommunication() {
     .then(data => {
         setTopLed(false);
         isCommActive = false;
+        updateMasterCommButton(); 
         updateChartButtons();
         alert("Communication stopped and port closed.");
     })
@@ -343,6 +377,7 @@ function handleLostConnection() {
     if(isCharting) stopChart();
     isCommActive = false;
     setTopLed(false);
+    updateMasterCommButton(); 
     updateChartButtons();
     fetch('/api/disconnect', { method: 'POST' }).catch(() => {});
     alert("ERROR: Lost connection with device.\nCheck the cable.");

@@ -27,6 +27,14 @@
                     <rect x="4" y="14" width="4" height="2" />
                 </svg>
             </div>
+
+            <div class="hmi-btn chart-btn" onclick="openChartModule()" title="Open Chart">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#673ab7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 20h18" />
+                    <path d="M3 4v16" />
+                    <path d="M3 15l5-5 5 5 8-8" />
+                </svg>
+            </div>
             
             <div class="hmi-btn download-btn" onclick="downloadConfig()" title="Download Config">
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#1a2d4c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -36,27 +44,18 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 514 520" fill="currentColor"><path d="M 286 85 L 203 168 L 177 207 L 163 235 L 160 245 L 154 249 L 146 259 L 145 272 L 148 280 L 97 331 L 121 355 L 121 357 L 0 477 L 0 491 L 26 517 L 154 389 L 179 412 L 228 362 L 242 369 L 254 368 L 263 362 L 268 353 L 296 343 L 319 331 L 339 318 L 354 306 L 430 230 Z M 407 1 L 317 91 L 328 102 L 329 102 L 344 117 L 344 118 L 423 197 L 425 197 L 442 180 L 442 179 L 459 162 L 460 162 L 465 157 L 465 156 L 475 146 L 476 146 L 477 145 L 477 144 L 513 108 L 465 60 L 465 59 L 419 14 L 419 13 Z M 454 86 L 456 86 L 477 107 L 477 109 L 461 125 L 460 125 L 438 103 L 438 102 Z M 404 34 L 426 56 L 426 57 L 410 73 L 408 73 L 388 53 L 388 52 L 387 51 L 387 50 L 394 43 L 395 43 L 396 42 L 396 41 L 402 35 L 403 35 Z" fill-rule="evenodd"/></svg>
             </div>
 
-            <div class="hmi-btn start-btn" onclick="startCommunication()" title="Start Communication">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M5 12h14"/> <path d="M5 12l4-4"/> <path d="M5 12l4 4"/> 
-                    <path d="M19 12l-4-4"/> <path d="M19 12l-4 4"/>
-                    <circle cx="12" cy="12" r="3" fill="#2e7d32" stroke="none"/>
+            <div id="btn-master-comm" class="hmi-btn comm-btn-off" onclick="toggleMasterCommunication()" title="Connect">
+                
+                <svg class="icon-disconnected" width="30" height="30" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16,9V11H8V9H10V8H4V10H2V2H4V4H12A2,2 0 0,1 14,6V9H16M10,15V18A2,2 0 0,0 12,20H20V22H22V14H20V16H14V15H16V13H8V15H10Z" />
                 </svg>
+
+                <svg class="icon-connected" width="30" height="30" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16,9V12H8V9H10V8H4V10H2V2H4V4H12A2,2 0 0,1 14,6V9H16 M10,15V18A2,2 0 0,0 12,20H20V22H22V14H20V16H14V15H16V12H8V15H10Z" />
+                </svg>
+
             </div>
 
-            <div class="hmi-btn stop-btn" onclick="stopCommunication()" title="Stop Communication">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 12h5"/> <path d="M15 12h5"/> <path d="M10 8l4 8"/> <path d="M14 8l-4 8"/>
-                </svg>
-            </div>
-
-            <div class="hmi-btn chart-btn" onclick="openChartModule()" title="Open Chart">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#673ab7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 20h18" />
-                    <path d="M3 4v16" />
-                    <path d="M3 15l5-5 5 5 8-8" />
-                </svg>
-            </div>
         </div>
 
         <div class="toolbar-group bottom">

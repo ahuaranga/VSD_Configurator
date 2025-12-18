@@ -33,13 +33,47 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: var(--font-main);
 .top-bar { background-color: var(--header-bg); border-bottom: 1px solid #bbb; height: var(--header-height); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; box-shadow: 0 2px 3px rgba(0,0,0,0.05); }
 .header-left-group { display: flex; align-items: center; gap: 15px; }
 
-/* BOTONES */
+/* =========================================
+   BOTONES
+   ========================================= */
 .hmi-btn { width: var(--btn-size); height: var(--btn-size); background: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%); border: 1px solid #a0a0a0; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 2px rgba(0,0,0,0.15), inset 0 1px 0 #fff; flex-shrink: 0; transition: all 0.1s; }
 .hmi-btn:hover { background: #ffffff; border-color: #888; }
 .hmi-btn:active { background: #e0e0e0; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); transform: translateY(1px); }
 .text-icon-btn { font-weight: 900; font-size: 20px; color: #1a2d4c; font-family: 'Arial Black', sans-serif; }
 
-/* INDICADOR TOP DERECHA */
+/* --- PRUEBA: Color Azul Profundo para Configuración --- */
+.config-btn {
+    color: #0d47a1; /* Azul Cobalto Oscuro */
+    transition: color 0.3s ease;
+}
+.config-btn:hover {
+    color: #002171; /* Azul Marino muy profundo al pasar el mouse */
+}
+
+/* --- ESTILOS ESPECÍFICOS PARA EL BOTÓN MAESTRO DE COMUNICACIÓN --- */
+
+/* ESTADO: DESCONECTADO (Muestra icono separado oscuro) */
+.comm-btn-off .icon-disconnected {
+    display: block;
+    fill: #1a2d4c; /* Azul oscuro/Negro estándar */
+}
+.comm-btn-off .icon-connected {
+    display: none;
+}
+
+/* ESTADO: CONECTADO (Muestra icono unido verde) */
+.comm-btn-on .icon-disconnected {
+    display: none;
+}
+.comm-btn-on .icon-connected {
+    display: block;
+    fill: #2e7d32; /* Verde estándar */
+    filter: drop-shadow(0 0 1px rgba(46, 125, 50, 0.4)); /* Brillo sutil */
+}
+
+/* =========================================
+   INDICADORES Y ESTADO
+   ========================================= */
 .breadcrumb { font-weight: 600; font-size: 16px; color: #333; white-space: nowrap; }
 .status-bar { font-size: 14px; color: #444; font-weight: bold; white-space: nowrap; display: flex; align-items: center; gap: 20px; }
 .conn-indicator { display: flex; align-items: center; gap: 8px; padding: 5px 12px; background-color: #dcdcdc; border-radius: 15px; border: 1px solid #bbb; transition: all 0.3s ease; }
@@ -49,7 +83,9 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: var(--font-main);
 .conn-indicator.connected .led-dot { background-color: var(--led-green); box-shadow: 0 0 5px var(--led-green); }
 .conn-indicator.connected .conn-text { color: var(--text-connected); }
 
-/* MENUS & CONTENT */
+/* =========================================
+   MENUS & CONTENT
+   ========================================= */
 .content-area { display: flex; flex: 1; position: relative; overflow: hidden; background-color: #f4f4f4; }
 .sidebar-main, .sidebar-sub { background-color: #e0e0e0; border-right: 1px solid var(--border-color); overflow-y: auto; display: none; flex-direction: column; width: 200px; flex-shrink: 0; height: 100%; z-index: 100; }
 .sidebar-sub { background-color: #dcdcdc; }
@@ -60,7 +96,9 @@ li:hover { background-color: #d0d0d0; }
 li.selected { background-color: var(--highlight-blue); color: white; font-weight: bold; }
 li.has-child::after { content: '▸'; }
 
-/* FORMS */
+/* =========================================
+   FORMULARIOS Y PANELES
+   ========================================= */
 .main-panel { flex: 1; padding: 15px; overflow-y: auto; position: relative; }
 .home-placeholder { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; pointer-events: none; user-select: none; }
 .home-placeholder h1 { font-size: 42px; margin: 0; color: rgba(0, 0, 0, 0.08); font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
@@ -92,7 +130,9 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
 .value-text { font-weight: bold; padding: 4px; }
 .info-panel { background-color: #f0f0f0; border: 1px solid #ccc; padding: 10px; font-size: 12px; color: #333; line-height: 1.4; }
 
-/* MODALS */
+/* =========================================
+   MODALS
+   ========================================= */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); display: flex; justify-content: center; align-items: center; z-index: 2000; }
 .modal-window { background: #e8e8e8; padding: 10px; border-radius: 5px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 320px; border: 1px solid #999; }
 .modal-fieldset { margin: 0; background: #f0f0f0; border: 1px solid #aaa; }
@@ -101,7 +141,9 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
 .modal-btn:hover { background: #8ec0f8; }
 .modal-btn:active { transform: translateY(1px); }
 
-/* PANEL CENTRAL DE ESTADO */
+/* =========================================
+   PANEL CENTRAL DE ESTADO
+   ========================================= */
 .center-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.2); 
