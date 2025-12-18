@@ -410,15 +410,69 @@ function setTopLed(isConnected) {
 // =========================================================
 
 function toggleMenuSystem() { 
-    isMenuOpen = !isMenuOpen; 
+    // 1. Detectar si estamos atrapados en el Graficador
+    const chartModule = document.getElementById('view-chart-module');
+    const isChartActive = (chartModule.style.display === 'block');
+
+    if (isChartActive) {
+        // === SALIENDO DEL MODO GRÁFICO ===
+        
+        // A. Ocultar el graficador siempre
+        chartModule.style.display = 'none';
+
+        // B. Verificar si teníamos algo seleccionado en el menú principal
+        if (currentMainIndex !== -1) {
+            
+            // Recuperamos los datos de la categoría seleccionada (ej. VSD)
+            const mainData = menuData[currentMainIndex];
+
+            // 1. Restaurar selección visual en la lista principal (Lado Izquierdo)
+            if (mainList.children[currentMainIndex]) {
+                mainList.children[currentMainIndex].classList.add('selected');
+            }
+            
+            // 2. Regenerar la lista de sub-items (Lado Derecho)
+            renderSubMenu(mainData);
+            
+            // 3. Abrimos el menú visualmente
+            isMenuOpen = true;
+
+            // C. Decidir qué vista mostrar (Profunda o Superficial)
+            if (currentSubIndex !== -1) {
+                // CASO 1: Tenías una sub-opción seleccionada (ej. Speed)
+                const subName = mainData.subItems[currentSubIndex];
+                breadcrumb.innerText = `Menu > ${mainData.name} > ${subName}`;
+                loadView(subName); 
+                if (subList.children[currentSubIndex]) {
+                    subList.children[currentSubIndex].classList.add('selected');
+                }
+            } else {
+                // CASO 2: Solo tenías la categoría seleccionada (ej. VSD)
+                breadcrumb.innerText = `Menu > ${mainData.name}`;
+                showSection('view-home'); 
+            }
+
+        } else {
+            // CASO 3: No había nada seleccionado, venías de Home.
+            // 1. Limpiamos la vista base (Home)
+            goHome(); 
+            
+            // 2. CORRECCIÓN: Forzamos la apertura del menú inmediatamente
+            isMenuOpen = true;
+            breadcrumb.innerText = "Menu";
+        }
+
+    } else {
+        // === COMPORTAMIENTO NORMAL (NO GRÁFICO) ===
+        isMenuOpen = !isMenuOpen;
+        
+        // Ajuste de Breadcrumb solo si abrimos menú y no hay selección
+        if (isMenuOpen && currentMainIndex === -1) {
+            breadcrumb.innerText = "Menu";
+        }
+    }
     
-    // Si abrimos el menú, cambiamos el breadcrumb a "Menu"
-    if (isMenuOpen) {
-        breadcrumb.innerText = "Menu";
-    } 
-    // Si lo cerramos pero no navegamos, podríamos revertir, pero 
-    // por simplicidad lo dejamos así hasta que el usuario elija algo.
-    
+    // Aplicar clases CSS para mostrar/ocultar paneles
     updateMenuVisibility(); 
 }
 
@@ -817,18 +871,40 @@ function clearAllVariables() {
 
     list.innerHTML = '';
     if (samplingSelect) { samplingSelect.disabled = false; samplingSelect.classList.remove('input-disabled'); }
-    if (myChart) { myChart.data.datasets = []; myChart.update(); updateCustomLegend(); }
+    if (myChart) { myChart.data.datasets = []; myChart.data.labels = []; myChart.update(); updateCustomLegend(); }
     btnRemove.disabled = true; btnSwap.disabled = true; btnClear.disabled = true;
+    
+    updateChartButtons();
 }
 
 function updateChartButtons() {
     const btnStart = document.getElementById('btn-chart-start');
     const btnStop = document.getElementById('btn-chart-stop');
-    if (!btnStart || !btnStop) return; 
-    if (!isCommActive) { btnStart.disabled = true; btnStop.disabled = true; }
-    else {
-        if (isCharting) { btnStart.disabled = true; btnStop.disabled = false; }
-        else { btnStart.disabled = false; btnStop.disabled = true; }
+    const btnExport = document.getElementById('btn-export-csv');
+
+    if (!btnStart || !btnStop || !btnExport) return; 
+
+    // Lógica Start/Stop
+    if (!isCommActive) { 
+        btnStart.disabled = true; 
+        btnStop.disabled = true; 
+    } else {
+        if (isCharting) { 
+            btnStart.disabled = true; 
+            btnStop.disabled = false; 
+        } else { 
+            btnStart.disabled = false; 
+            btnStop.disabled = true; 
+        }
+    }
+
+    // Lógica Exportar CSV: Solo si hay datos y está detenido
+    const hasData = (myChart && myChart.data.labels.length > 0);
+    
+    if (hasData && !isCharting) {
+        btnExport.disabled = false;
+    } else {
+        btnExport.disabled = true;
     }
 }
 
@@ -880,4 +956,42 @@ function updateChartData() {
         pollErrorCount++;
         if (pollErrorCount >= 3) { handleLostConnection(); }
     });
+}
+
+// NUEVA FUNCIÓN DE EXPORTACIÓN
+function exportChartToCSV() {
+    if (!myChart || myChart.data.labels.length === 0) {
+        alert("No data to export.");
+        return;
+    }
+
+    // 1. Cabecera
+    let csvContent = "data:text/csv;charset=utf-8,";
+    let header = ["Time"];
+    
+    myChart.data.datasets.forEach(ds => {
+        let cleanLabel = ds.origLabel.replace(/,/g, ''); 
+        header.push(`${cleanLabel} [${ds.unit}]`);
+    });
+    csvContent += header.join(",") + "\r\n";
+
+    // 2. Datos
+    myChart.data.labels.forEach((label, i) => {
+        let row = [label];
+        myChart.data.datasets.forEach(ds => {
+            let val = ds.data[i];
+            row.push((val !== null && val !== undefined) ? val : "");
+        });
+        csvContent += row.join(",") + "\r\n";
+    });
+
+    // 3. Descarga
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    const dateStr = new Date().toISOString().slice(0,19).replace(/:/g,"-");
+    link.setAttribute("download", `VSD_Log_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }

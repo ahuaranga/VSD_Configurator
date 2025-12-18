@@ -664,14 +664,23 @@
                             <ul id="chart-added-list" class="simple-list">
                                 </ul>
                         </div>
-                        <div class="chart-container">
-                            <div style="flex: 1; position: relative; min-height: 0; width: 100%;">
-                                <canvas id="realtimeChart"></canvas>
+                        
+                        <div class="chart-right-wrapper">
+                            <div class="chart-container">
+                                <div style="flex: 1; position: relative; min-height: 0; width: 100%;">
+                                    <canvas id="realtimeChart"></canvas>
+                                </div>
+                                
+                                <div id="custom-legend" class="custom-legend-container">
+                                    <div id="legend-left" class="legend-group left"></div>
+                                    <div id="legend-right" class="legend-group right"></div>
+                                </div>
                             </div>
-                            
-                            <div id="custom-legend" class="custom-legend-container">
-                                <div id="legend-left" class="legend-group left"></div>
-                                <div id="legend-right" class="legend-group right"></div>
+
+                            <div class="chart-footer">
+                                <button id="btn-export-csv" class="btn-standard" onclick="exportChartToCSV()" disabled title="Export data to CSV">
+                                    Export CSV
+                                </button>
                             </div>
                         </div>
                     </div>

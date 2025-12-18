@@ -1,7 +1,7 @@
 /* =========================================
    1. VARIABLES Y RESET
    ========================================= */
-:root {
+   :root {
     --bg-color: #f0f0f0;
     --header-bg: #e8e8e8;
     --border-color: #a0a0a0;
@@ -291,6 +291,16 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
     font-weight: bold;
 }
 
+/* NUEVA COLUMNA DERECHA (Wrapper) */
+.chart-right-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 10px;
+    min-width: 0; /* Previene desbordamientos flex */
+}
+
 /* AJUSTE: Contenedor principal ahora es columna para apilar gráfica y leyenda */
 .chart-container {
     flex: 1;
@@ -375,4 +385,22 @@ canvas {
     text-align: left;
     padding: 4px;
     padding-left: 5px;
+}
+
+/* --- NUEVOS ESTILOS EXPORTAR CSV --- */
+.chart-footer {
+    display: flex;
+    justify-content: flex-end; /* Alineación derecha */
+}
+
+#btn-export-csv {
+    background-color: #e8f5e9; /* Verde muy suave */
+    border-color: #a5d6a7;
+    color: #2e7d32;
+    font-weight: bold;
+}
+#btn-export-csv:disabled {
+    background-color: #f4f4f4;
+    border-color: #d0d0d0;
+    color: #a0a0a0;
 }
