@@ -1,12 +1,12 @@
 // =========================================================
-// 0. MAPA DE VINCULACIÓN Y VARIABLES GLOBALES
+// 0. MAPA DE VINCULACIÓN, UNIDADES Y EJES
 // =========================================================
 const TAG_MAP = {
     // GRUPO 1: ALARMAS
     'overcurrent': 'vsd_ol_setpoint_0',
     'undercurrent': 'vsd_ul_setpoint',
     
-    // GRUPO 2: MONITORIZACIÓN VSD (GENERAL)
+    // GRUPO 2: MONITORIZACIÓN VSD
     'vsd_supply_voltage': 'vsd_supply_voltage',
     'vsd_temperature': 'vsd_temperature',
 
@@ -15,10 +15,8 @@ const TAG_MAP = {
     'vsd_frequency_out': 'vsd_frequency_out',
     'vsd_current': 'vsd_current',
     'vsd_motor_current': 'vsd_motor_current',
-    // --- NUEVOS REGISTROS (Volts In/Out) ---
     'vsd_volts_in': 'vsd_volts_in',
     'vsd_volts_out': 'vsd_volts_out',
-    // ---------------------------------------
 
     // GRUPO 4: DOWN HOLE TOOL (DHT)
     'dht_intake_pressure': 'dht_intake_pressure',
@@ -44,10 +42,8 @@ const UNIT_MAP = {
     'vsd_frequency_out': 'Hz',
     'vsd_current': 'A',
     'vsd_motor_current': 'A',
-    // --- NUEVAS UNIDADES ---
     'vsd_volts_in': 'V',
     'vsd_volts_out': 'V',
-    // -----------------------
 
     // UNIDADES DHT
     'dht_intake_pressure': 'psi',
@@ -62,7 +58,22 @@ const UNIT_MAP = {
     'dht_diff_pressure': 'psi'
 };
 
-// --- CONFIGURACION DE PUERTO (Valores por defecto) ---
+// --- NUEVO: MAPA DE EJES POR DEFECTO ---
+// Si una variable no está aquí, se asume 'y' (Izquierdo/Left)
+const DEFAULT_AXIS_MAP = {
+    // Variables que van al Eje Derecho (Right / y1) por defecto
+    'dht_vibration': 'y1',
+    'dht_active_leakage': 'y1',
+    'dht_cz': 'y1',
+    'dht_cf': 'y1',
+    'dht_passive_leakage': 'y1'
+    
+    // El resto (Pressure, Temp, Diff Pressure, Voltajes, etc.) van al Left por defecto.
+};
+
+// =========================================================
+// 1. CONFIGURACIÓN Y ESTADO GLOBAL
+// =========================================================
 let savedConfig = {
     port: null,
     baudrate: 19200,
@@ -72,7 +83,6 @@ let savedConfig = {
     timeout: 1
 };
 
-// --- VARIABLES DE ESTADO ---
 let connectionInterval = null; 
 let pollingInterval = null;    
 let isCommActive = false;      
@@ -109,7 +119,7 @@ let currentFocusIndex = 0;
 let currentEditingId = '';
 
 // =========================================================
-// 1. GESTIÓN DE INTERFAZ Y NAVEGACIÓN (Teclado/Mouse)
+// 2. GESTIÓN DE INTERFAZ Y NAVEGACIÓN (Teclado/Mouse)
 // =========================================================
 
 document.addEventListener('keydown', (e) => {
@@ -188,7 +198,7 @@ function jumpBlock(direction) {
 }
 
 // =========================================================
-// 2. MODALES Y CONFIGURACIÓN (Alarmas y Puertos)
+// 3. MODALES Y CONFIGURACIÓN (Alarmas y Puertos)
 // =========================================================
 
 function openAlarmModal(idSuffix, titleText) {
@@ -305,7 +315,7 @@ function applyConfigParams() { if(readConfigFromDOM()) console.log("Config appli
 function okConfigParams() { if(readConfigFromDOM()) closeConfigModal(); }
 
 // =========================================================
-// 3. COMUNICACIÓN MODBUS (Conectar/Desconectar/Leer)
+// 4. COMUNICACIÓN MODBUS (Conectar/Desconectar/Leer)
 // =========================================================
 
 function toggleMasterCommunication() {
@@ -475,11 +485,10 @@ function setTopLed(isConnected) {
 }
 
 // =========================================================
-// 4. LÓGICA DE MENÚS Y PANELES
+// 5. LÓGICA DE MENÚS Y PANELES
 // =========================================================
 
 function toggleMenuSystem() { 
-    // Detectar si estamos atrapados en el Graficador
     const chartModule = document.getElementById('view-chart-module');
     const isChartActive = (chartModule.style.display === 'block');
 
@@ -533,17 +542,13 @@ function downloadConfig() { alert("Report download functionality in development.
 
 function updateCustomLegend() {
     if (!myChart) return;
-
     const leftContainer = document.getElementById('legend-left');
     const rightContainer = document.getElementById('legend-right');
-    
     leftContainer.innerHTML = '';
     rightContainer.innerHTML = '';
 
     myChart.data.datasets.forEach((dataset, index) => {
         const lastValue = dataset.data.length > 0 ? dataset.data[dataset.data.length - 1] : '--';
-        
-        // NOTA: Eliminamos la variable axisLabel ([L]/[R])
         
         const item = document.createElement('div');
         item.className = 'legend-item';
@@ -561,24 +566,22 @@ function updateCustomLegend() {
         colorBox.style.border = `1px solid ${dataset.borderColor}`;
 
         const text = document.createElement('span');
-        
-        // CAMBIO: Eliminamos ${axisLabel} del string para que sea más limpio
+        // No agregamos [L] o [R], solo el nombre
         text.innerText = `${dataset.origLabel}: ${lastValue} ${dataset.unit}`;
 
         item.appendChild(colorBox);
         item.appendChild(text);
 
-        // La lógica de posicionamiento se mantiene:
         if (dataset.yAxisID === 'y') {
-            leftContainer.appendChild(item); // Se añade al contenedor Izquierdo
+            leftContainer.appendChild(item); 
         } else {
-            rightContainer.appendChild(item); // Se añade al contenedor Derecho
+            rightContainer.appendChild(item); 
         }
     });
 }
 
 // =========================================================
-// 5. LÓGICA DE GRÁFICOS (CHART.JS)
+// 6. LÓGICA DE GRÁFICOS (CHART.JS)
 // =========================================================
 
 function initChart() {
@@ -779,29 +782,32 @@ function updateSamplingRate() {
     }
 }
 
-// --- FUNCIÓN REFACTORIZADA PARA AÑADIR VARIABLES ---
-// Esta función maneja la lógica visual y de datos para una sola variable
+// --- FUNCIÓN CENTRAL PARA AÑADIR VARIABLES (CON LÓGICA DE EJES AUTOMÁTICA) ---
 function coreAddVariable(value, text, optionElement) {
     const list = document.getElementById('chart-added-list');
     const btnClear = document.getElementById('btn-clear-vars');
     const samplingSelect = document.getElementById('chart-sampling-select'); 
 
-    // Verificación de duplicados (por si acaso)
+    // Verificación de duplicados
     const existingItems = Array.from(list.children).map(li => li.dataset.value);
     if (existingItems.includes(value)) return;
+
+    // DETERMINAR EJE AUTOMÁTICO
+    const targetAxis = DEFAULT_AXIS_MAP[value] || 'y';
+    const axisLabel = (targetAxis === 'y1') ? '[R]' : '[L]';
 
     const timeSec = chartPollingRate / 1000;
     const li = document.createElement('li');
     li.dataset.value = value;
-    li.dataset.axis = 'y'; 
-    li.innerText = `[L] ${text} (${timeSec} s)`; 
+    li.dataset.axis = targetAxis; 
+    li.innerText = `${axisLabel} ${text} (${timeSec} s)`; 
     li.onclick = function() { selectChartItem(this); };
     list.appendChild(li);
 
     // Deshabilitar selector de muestreo si es el primero
     if (samplingSelect) { samplingSelect.disabled = true; samplingSelect.classList.add('input-disabled'); }
 
-    // Deshabilitar la opción en el dropdown para que no se elija de nuevo
+    // Ocultar opción del dropdown
     if (optionElement) {
         optionElement.disabled = true;
         optionElement.hidden = true;
@@ -811,18 +817,25 @@ function coreAddVariable(value, text, optionElement) {
     if(btnClear) btnClear.disabled = false;
     if (!myChart) initChart();
 
-    // Crear el dataset para Chart.js
+    // Crear dataset con el eje correcto
     const newDataset = {
-        label: text, origLabel: text, unit: UNIT_MAP[value] || '',
-        data: [], borderColor: getRandomColor(), borderWidth: 2, fill: false,
-        pointRadius: 0, pointHoverRadius: 5, yAxisID: 'y' 
+        label: text, 
+        origLabel: text, 
+        unit: UNIT_MAP[value] || '',
+        data: [], 
+        borderColor: getRandomColor(), 
+        borderWidth: 2, 
+        fill: false,
+        pointRadius: 0, 
+        pointHoverRadius: 5, 
+        yAxisID: targetAxis 
     };
+    
     myChart.data.datasets.push(newDataset);
     myChart.update();
     updateCustomLegend();
 }
 
-// Función Original (Botón "Add Variable") - Ahora usa la auxiliar
 function addVariableToChart() {
     const select = document.getElementById('chart-var-select');
     
@@ -834,10 +847,8 @@ function addVariableToChart() {
 
     coreAddVariable(selectedValue, selectedText, selectedOption);
     
-    select.value = ""; // Resetear selector
+    select.value = ""; 
 }
-
-// --- NUEVAS FUNCIONES DE GRUPO ---
 
 function addGroupByLabel(groupLabel) {
     const select = document.getElementById('chart-var-select');
@@ -853,15 +864,13 @@ function addGroupByLabel(groupLabel) {
 
     if (targetGroup) {
         const options = targetGroup.getElementsByTagName('option');
-        // Iteramos sobre las opciones del grupo
         for (let i = 0; i < options.length; i++) {
             const opt = options[i];
-            // Solo añadimos si no está ya deshabilitada (agregada)
             if (!opt.disabled) {
                 coreAddVariable(opt.value, opt.text, opt);
             }
         }
-        select.value = ""; // Limpiar selección por si acaso
+        select.value = ""; 
     }
 }
 
@@ -888,14 +897,20 @@ function swapVariableAxis() {
     const selectedItem = list.querySelector('.selected');
     if (!selectedItem || !myChart) return;
     const textInLi = selectedItem.innerText;
+    // Eliminamos [L] o [R] y la parte del tiempo para obtener el nombre limpio
     const textClean = textInLi.replace(/^\[[LR]\]\s+/, '').replace(/\s\(\d+(\.\d+)?\s?s\)$/, '');
     const dataset = myChart.data.datasets.find(ds => ds.origLabel === textClean);
     const timeSec = chartPollingRate / 1000;
+    
     if (dataset) {
         if (dataset.yAxisID === 'y') {
-            dataset.yAxisID = 'y1'; selectedItem.dataset.axis = 'y1'; selectedItem.innerText = `[R] ${textClean} (${timeSec} s)`;
+            dataset.yAxisID = 'y1'; 
+            selectedItem.dataset.axis = 'y1'; 
+            selectedItem.innerText = `[R] ${textClean} (${timeSec} s)`;
         } else {
-            dataset.yAxisID = 'y'; selectedItem.dataset.axis = 'y'; selectedItem.innerText = `[L] ${textClean} (${timeSec} s)`;
+            dataset.yAxisID = 'y'; 
+            selectedItem.dataset.axis = 'y'; 
+            selectedItem.innerText = `[L] ${textClean} (${timeSec} s)`;
         }
         myChart.update();
         updateCustomLegend();
