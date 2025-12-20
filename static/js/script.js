@@ -533,14 +533,17 @@ function downloadConfig() { alert("Report download functionality in development.
 
 function updateCustomLegend() {
     if (!myChart) return;
+
     const leftContainer = document.getElementById('legend-left');
     const rightContainer = document.getElementById('legend-right');
+    
     leftContainer.innerHTML = '';
     rightContainer.innerHTML = '';
 
     myChart.data.datasets.forEach((dataset, index) => {
         const lastValue = dataset.data.length > 0 ? dataset.data[dataset.data.length - 1] : '--';
-        const axisLabel = dataset.yAxisID === 'y' ? '[L]' : '[R]';
+        
+        // NOTA: Eliminamos la variable axisLabel ([L]/[R])
         
         const item = document.createElement('div');
         item.className = 'legend-item';
@@ -558,15 +561,18 @@ function updateCustomLegend() {
         colorBox.style.border = `1px solid ${dataset.borderColor}`;
 
         const text = document.createElement('span');
-        text.innerText = `${axisLabel} ${dataset.origLabel}: ${lastValue} ${dataset.unit}`;
+        
+        // CAMBIO: Eliminamos ${axisLabel} del string para que sea más limpio
+        text.innerText = `${dataset.origLabel}: ${lastValue} ${dataset.unit}`;
 
         item.appendChild(colorBox);
         item.appendChild(text);
 
+        // La lógica de posicionamiento se mantiene:
         if (dataset.yAxisID === 'y') {
-            leftContainer.appendChild(item); 
+            leftContainer.appendChild(item); // Se añade al contenedor Izquierdo
         } else {
-            rightContainer.appendChild(item); 
+            rightContainer.appendChild(item); // Se añade al contenedor Derecho
         }
     });
 }
@@ -773,11 +779,52 @@ function updateSamplingRate() {
     }
 }
 
-function addVariableToChart() {
-    const select = document.getElementById('chart-var-select');
+// --- FUNCIÓN REFACTORIZADA PARA AÑADIR VARIABLES ---
+// Esta función maneja la lógica visual y de datos para una sola variable
+function coreAddVariable(value, text, optionElement) {
     const list = document.getElementById('chart-added-list');
     const btnClear = document.getElementById('btn-clear-vars');
     const samplingSelect = document.getElementById('chart-sampling-select'); 
+
+    // Verificación de duplicados (por si acaso)
+    const existingItems = Array.from(list.children).map(li => li.dataset.value);
+    if (existingItems.includes(value)) return;
+
+    const timeSec = chartPollingRate / 1000;
+    const li = document.createElement('li');
+    li.dataset.value = value;
+    li.dataset.axis = 'y'; 
+    li.innerText = `[L] ${text} (${timeSec} s)`; 
+    li.onclick = function() { selectChartItem(this); };
+    list.appendChild(li);
+
+    // Deshabilitar selector de muestreo si es el primero
+    if (samplingSelect) { samplingSelect.disabled = true; samplingSelect.classList.add('input-disabled'); }
+
+    // Deshabilitar la opción en el dropdown para que no se elija de nuevo
+    if (optionElement) {
+        optionElement.disabled = true;
+        optionElement.hidden = true;
+        optionElement.style.display = 'none';
+    }
+    
+    if(btnClear) btnClear.disabled = false;
+    if (!myChart) initChart();
+
+    // Crear el dataset para Chart.js
+    const newDataset = {
+        label: text, origLabel: text, unit: UNIT_MAP[value] || '',
+        data: [], borderColor: getRandomColor(), borderWidth: 2, fill: false,
+        pointRadius: 0, pointHoverRadius: 5, yAxisID: 'y' 
+    };
+    myChart.data.datasets.push(newDataset);
+    myChart.update();
+    updateCustomLegend();
+}
+
+// Función Original (Botón "Add Variable") - Ahora usa la auxiliar
+function addVariableToChart() {
+    const select = document.getElementById('chart-var-select');
     
     if (select.selectedIndex === -1 || !select.value) return;
 
@@ -785,36 +832,45 @@ function addVariableToChart() {
     let selectedText = selectedOption.text.replace(/^\d+\s+/, ''); 
     const selectedValue = select.value;
 
-    const existingItems = Array.from(list.children).map(li => li.dataset.value);
-    if (existingItems.includes(selectedValue)) { return alert("This variable is already added."); }
-
-    const timeSec = chartPollingRate / 1000;
-    const li = document.createElement('li');
-    li.dataset.value = selectedValue;
-    li.dataset.axis = 'y'; 
-    li.innerText = `[L] ${selectedText} (${timeSec} s)`; 
-    li.onclick = function() { selectChartItem(this); };
-    list.appendChild(li);
-
-    if (samplingSelect) { samplingSelect.disabled = true; samplingSelect.classList.add('input-disabled'); }
-
-    selectedOption.disabled = true;
-    selectedOption.hidden = true;
-    selectedOption.style.display = 'none';
+    coreAddVariable(selectedValue, selectedText, selectedOption);
     
-    select.value = ""; 
-    
-    if(btnClear) btnClear.disabled = false;
-    if (!myChart) initChart();
+    select.value = ""; // Resetear selector
+}
 
-    const newDataset = {
-        label: selectedText, origLabel: selectedText, unit: UNIT_MAP[selectedValue] || '',
-        data: [], borderColor: getRandomColor(), borderWidth: 2, fill: false,
-        pointRadius: 0, pointHoverRadius: 5, yAxisID: 'y' 
-    };
-    myChart.data.datasets.push(newDataset);
-    myChart.update();
-    updateCustomLegend();
+// --- NUEVAS FUNCIONES DE GRUPO ---
+
+function addGroupByLabel(groupLabel) {
+    const select = document.getElementById('chart-var-select');
+    const optgroups = select.getElementsByTagName('optgroup');
+    
+    let targetGroup = null;
+    for (let i = 0; i < optgroups.length; i++) {
+        if (optgroups[i].label === groupLabel) {
+            targetGroup = optgroups[i];
+            break;
+        }
+    }
+
+    if (targetGroup) {
+        const options = targetGroup.getElementsByTagName('option');
+        // Iteramos sobre las opciones del grupo
+        for (let i = 0; i < options.length; i++) {
+            const opt = options[i];
+            // Solo añadimos si no está ya deshabilitada (agregada)
+            if (!opt.disabled) {
+                coreAddVariable(opt.value, opt.text, opt);
+            }
+        }
+        select.value = ""; // Limpiar selección por si acaso
+    }
+}
+
+function addDHTGroup() {
+    addGroupByLabel("Down Hole Tool");
+}
+
+function addVSDGroup() {
+    addGroupByLabel("Variable Speed Drive");
 }
 
 function selectChartItem(element) {

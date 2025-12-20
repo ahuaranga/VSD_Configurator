@@ -290,24 +290,32 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
     margin-bottom: 20px;
 }
 
-/* Grilla de Controles */
+/* Grilla de Controles (4 Columnas) */
 .chart-grid-layout {
     display: grid;
-    grid-template-columns: auto 130px 130px;
+    /* Col 1: Dropdowns | Col 2: Swap/Add | Col 3: Grupos | Col 4: Clear/Remove */
+    grid-template-columns: auto 130px 140px 130px; 
     grid-template-rows: 36px 36px;
     gap: 5px;
     grid-template-areas:
-        "sampling swap    clear"
-        "dropdown add     remove";
+        "sampling swap    dht    clear"
+        "dropdown add     vsd    remove";
 }
 
+/* Asignación de áreas */
 .area-dropdown { grid-area: dropdown; display: flex; align-items: center; }
 .area-sampling { grid-area: sampling; display: flex; align-items: center; }
+
 .area-swap     { grid-area: swap; }
-.area-clear    { grid-area: clear; }
 .area-add      { grid-area: add; }
+
+.area-dht      { grid-area: dht; }
+.area-vsd      { grid-area: vsd; }
+
+.area-clear    { grid-area: clear; }
 .area-remove   { grid-area: remove; }
 
+/* Botones dentro de la grilla */
 .chart-grid-layout .btn-standard {
     width: 100%; height: 100%; margin: 0; padding: 0 10px; 
 }
@@ -328,9 +336,16 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
 }
 
 .chart-select {
-    border: 1px solid #aaa; border-radius: 0 4px 4px 0; padding: 0 10px;
-    height: 36px; font-size: 14px; width: 220px; background-color: white;
-    outline: none; font-weight: normal; text-align: left;
+    border: 1px solid #aaa; 
+    border-radius: 0 4px 4px 0; 
+    padding: 0 10px;
+    height: 36px; 
+    font-size: 14px; 
+    width: 200px; 
+    background-color: white;
+    outline: none; 
+    font-weight: normal; 
+    text-align: left;
 }
 .chart-select:focus { border-color: var(--highlight-blue); }
 
@@ -357,10 +372,19 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
     display: flex; gap: 20px; height: calc(100vh - 250px); align-items: flex-start;
 }
 
+/* 2. Lista lateral ajustada al nuevo ancho total (120 + 200 = 320) */
 .added-vars-box {
-    background-color: #ffffff; border: 1px solid #7a9cc6;
-    width: 300px; height: 100%; overflow-y: auto; padding: 5px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0;
+    background-color: #ffffff; 
+    border: 1px solid #7a9cc6;
+    
+    /* CAMBIO: Aumentamos de 280px a 320px */
+    width: 320px; 
+    
+    height: calc(100% - 56px); 
+    overflow-y: auto; 
+    padding: 5px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); 
+    flex-shrink: 0;
 }
 
 .simple-list { list-style: none; padding: 0; margin: 0; }
@@ -389,9 +413,14 @@ canvas { max-width: 100%; max-height: 100%; }
 
 /* Leyenda Personalizada */
 .custom-legend-container {
-    display: flex; justify-content: space-between; align-items: flex-start;
-    margin-top: 5px; padding-top: 5px; border-top: 1px solid #eee;
-    min-height: 30px; font-size: 12px;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-start;
+    margin-top: 5px; 
+    padding-top: 5px; 
+    border-top: 1px solid #eee;
+    min-height: 30px; 
+    font-size: 14px;
 }
 
 .legend-group {
