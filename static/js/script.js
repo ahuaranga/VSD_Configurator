@@ -58,17 +58,13 @@ const UNIT_MAP = {
     'dht_diff_pressure': 'psi'
 };
 
-// --- NUEVO: MAPA DE EJES POR DEFECTO ---
-// Si una variable no está aquí, se asume 'y' (Izquierdo/Left)
+// --- MAPA DE EJES POR DEFECTO ---
 const DEFAULT_AXIS_MAP = {
-    // Variables que van al Eje Derecho (Right / y1) por defecto
     'dht_vibration': 'y1',
     'dht_active_leakage': 'y1',
     'dht_cz': 'y1',
     'dht_cf': 'y1',
     'dht_passive_leakage': 'y1'
-    
-    // El resto (Pressure, Temp, Diff Pressure, Voltajes, etc.) van al Left por defecto.
 };
 
 // =========================================================
@@ -198,7 +194,7 @@ function jumpBlock(direction) {
 }
 
 // =========================================================
-// 3. MODALES Y CONFIGURACIÓN (Alarmas y Puertos)
+// 3. MODALES Y CONFIGURACIÓN
 // =========================================================
 
 function openAlarmModal(idSuffix, titleText) {
@@ -374,6 +370,10 @@ function startCommunication() {
             updateMasterCommButton(); 
             startPolling();
             updateChartButtons();
+            
+            // --- NUEVO: LEER FIRMWARE AL CONECTAR ---
+            readFirmwareVersion();
+
             setTimeout(() => { statusModal.style.display = 'none'; }, 800);
         } else {
             progressBar.style.backgroundColor = '#c62828';
@@ -409,6 +409,11 @@ function stopCommunication() {
     .then(data => {
         setTopLed(false);
         isCommActive = false;
+        
+        // REINICIAR DISPLAY FW
+        const fwEl = document.getElementById('fw-display');
+        if(fwEl) fwEl.innerText = "Fw:";
+
         updateMasterCommButton(); 
         updateChartButtons();
         alert("Communication stopped and port closed.");
@@ -421,10 +426,49 @@ function handleLostConnection() {
     if(isCharting) stopChart();
     isCommActive = false;
     setTopLed(false);
+    
+    // REINICIAR DISPLAY FW
+    const fwEl = document.getElementById('fw-display');
+    if(fwEl) fwEl.innerText = "Fw:";
+
     updateMasterCommButton(); 
     updateChartButtons();
     fetch('/api/disconnect', { method: 'POST' }).catch(() => {});
     alert("ERROR: Lost connection with device.\nCheck the cable.");
+}
+
+// NUEVA FUNCIÓN: LEER FIRMWARE CON CONVERSIÓN HEX
+function readFirmwareVersion() {
+    fetch('/api/read_batch', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ ids: ['fw_ver_code', 'fw_rel_code'] })
+    })
+    .then(r => r.json())
+    .then(data => {
+        let ver = data['fw_ver_code'];
+        const rel = data['fw_rel_code'];
+        
+        const el = document.getElementById('fw-display');
+        if (el) {
+            if (ver !== null && rel !== null && ver !== undefined && rel !== undefined) {
+                // LÓGICA DE CONVERSIÓN CORREGIDA:
+                // 1. Convertir Decimal (ej: 8487) a Hexadecimal (ej: "2127")
+                let hexVer = ver.toString(16);
+                
+                // 2. Insertar el punto después del primer carácter (ej: "2.127")
+                if (hexVer.length > 1) {
+                    hexVer = hexVer.charAt(0) + '.' + hexVer.slice(1);
+                }
+                
+                // 3. Mostrar concatenado
+                el.innerText = `Fw: ${hexVer}r${rel}`;
+            } else {
+                el.innerText = "Fw: Error";
+            }
+        }
+    })
+    .catch(err => console.error("Error reading firmware:", err));
 }
 
 function startPolling() {
@@ -542,8 +586,10 @@ function downloadConfig() { alert("Report download functionality in development.
 
 function updateCustomLegend() {
     if (!myChart) return;
+
     const leftContainer = document.getElementById('legend-left');
     const rightContainer = document.getElementById('legend-right');
+    
     leftContainer.innerHTML = '';
     rightContainer.innerHTML = '';
 
@@ -566,7 +612,6 @@ function updateCustomLegend() {
         colorBox.style.border = `1px solid ${dataset.borderColor}`;
 
         const text = document.createElement('span');
-        // No agregamos [L] o [R], solo el nombre
         text.innerText = `${dataset.origLabel}: ${lastValue} ${dataset.unit}`;
 
         item.appendChild(colorBox);
@@ -782,17 +827,14 @@ function updateSamplingRate() {
     }
 }
 
-// --- FUNCIÓN CENTRAL PARA AÑADIR VARIABLES (CON LÓGICA DE EJES AUTOMÁTICA) ---
 function coreAddVariable(value, text, optionElement) {
     const list = document.getElementById('chart-added-list');
     const btnClear = document.getElementById('btn-clear-vars');
     const samplingSelect = document.getElementById('chart-sampling-select'); 
 
-    // Verificación de duplicados
     const existingItems = Array.from(list.children).map(li => li.dataset.value);
     if (existingItems.includes(value)) return;
 
-    // DETERMINAR EJE AUTOMÁTICO
     const targetAxis = DEFAULT_AXIS_MAP[value] || 'y';
     const axisLabel = (targetAxis === 'y1') ? '[R]' : '[L]';
 
@@ -804,10 +846,8 @@ function coreAddVariable(value, text, optionElement) {
     li.onclick = function() { selectChartItem(this); };
     list.appendChild(li);
 
-    // Deshabilitar selector de muestreo si es el primero
     if (samplingSelect) { samplingSelect.disabled = true; samplingSelect.classList.add('input-disabled'); }
 
-    // Ocultar opción del dropdown
     if (optionElement) {
         optionElement.disabled = true;
         optionElement.hidden = true;
@@ -817,7 +857,6 @@ function coreAddVariable(value, text, optionElement) {
     if(btnClear) btnClear.disabled = false;
     if (!myChart) initChart();
 
-    // Crear dataset con el eje correcto
     const newDataset = {
         label: text, 
         origLabel: text, 
@@ -897,7 +936,6 @@ function swapVariableAxis() {
     const selectedItem = list.querySelector('.selected');
     if (!selectedItem || !myChart) return;
     const textInLi = selectedItem.innerText;
-    // Eliminamos [L] o [R] y la parte del tiempo para obtener el nombre limpio
     const textClean = textInLi.replace(/^\[[LR]\]\s+/, '').replace(/\s\(\d+(\.\d+)?\s?s\)$/, '');
     const dataset = myChart.data.datasets.find(ds => ds.origLabel === textClean);
     const timeSec = chartPollingRate / 1000;
@@ -981,7 +1019,6 @@ function updateChartButtons() {
 
     if (!btnStart || !btnStop || !btnExport) return; 
 
-    // Lógica Start/Stop
     if (!isCommActive) { 
         btnStart.disabled = true; 
         btnStop.disabled = true; 
@@ -995,8 +1032,8 @@ function updateChartButtons() {
         }
     }
 
-    // Lógica Exportar CSV
     const hasData = (myChart && myChart.data.labels.length > 0);
+    
     if (hasData && !isCharting) {
         btnExport.disabled = false;
     } else {
@@ -1059,6 +1096,7 @@ function exportChartToCSV() {
         alert("No data to export.");
         return;
     }
+
     let csvContent = "data:text/csv;charset=utf-8,";
     let header = ["Time"];
     

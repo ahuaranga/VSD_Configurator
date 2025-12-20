@@ -28,17 +28,7 @@
                 </svg>
             </div>
 
-            <div class="hmi-btn chart-btn" onclick="openChartModule()" title="Open Chart">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#673ab7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 20h18" />
-                    <path d="M3 4v16" />
-                    <path d="M3 15l5-5 5 5 8-8" />
-                </svg>
-            </div>
-            
-            <div class="hmi-btn download-btn" onclick="downloadConfig()" title="Download Config">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#1a2d4c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            </div>
+            <div class="sidebar-separator"></div>
 
             <div class="hmi-btn config-btn" onclick="openConfigModal()" title="Configure Port">
                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 514 520" fill="currentColor"><path d="M 286 85 L 203 168 L 177 207 L 163 235 L 160 245 L 154 249 L 146 259 L 145 272 L 148 280 L 97 331 L 121 355 L 121 357 L 0 477 L 0 491 L 26 517 L 154 389 L 179 412 L 228 362 L 242 369 L 254 368 L 263 362 L 268 353 L 296 343 L 319 331 L 339 318 L 354 306 L 430 230 Z M 407 1 L 317 91 L 328 102 L 329 102 L 344 117 L 344 118 L 423 197 L 425 197 L 442 180 L 442 179 L 459 162 L 460 162 L 465 157 L 465 156 L 475 146 L 476 146 L 477 145 L 477 144 L 513 108 L 465 60 L 465 59 L 419 14 L 419 13 Z M 454 86 L 456 86 L 477 107 L 477 109 L 461 125 L 460 125 L 438 103 L 438 102 Z M 404 34 L 426 56 L 426 57 L 410 73 L 408 73 L 388 53 L 388 52 L 387 51 L 387 50 L 394 43 L 395 43 L 396 42 L 396 41 L 402 35 L 403 35 Z" fill-rule="evenodd"/></svg>
@@ -53,9 +43,25 @@
                 </svg>
             </div>
 
+            <div class="sidebar-separator"></div>
+
+            <div class="hmi-btn chart-btn" onclick="openChartModule()" title="Open Chart">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#673ab7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 20h18" />
+                    <path d="M3 4v16" />
+                    <path d="M3 15l5-5 5 5 8-8" />
+                </svg>
+            </div>
+            
+            <div class="hmi-btn download-btn" onclick="downloadConfig()" title="Download Config">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#1a2d4c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+
         </div>
 
         <div class="toolbar-group bottom">
+            <div class="sidebar-separator"></div>
+            
             <div class="hmi-btn text-icon-btn" title="PM Function">PM</div>
             <div class="hmi-btn text-icon-btn" title="IM Function">IM</div>
         </div>
@@ -65,14 +71,30 @@
         
         <header class="top-bar">
             <div class="header-left-group">
+                
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     viewBox="1200 2200 2600 600"
+                     height="50" 
+                     role="img" aria-label="icView logo"
+                     style="display: block;">
+                     
+                     <path fill="#252B37" d="M1268.236,2316.773c0-33.731,27.345-61.076,61.076-61.076h122.152
+                            c33.731,0,61.076,27.344,61.076,61.076v119.943c0.002,0.733,0.004,1.469,0.004,2.208c0,33.683,27.267,60.998,60.93,61.076
+                            c0.048,0,0.094,0,0.142,0h122.151c33.731,0,61.076,27.345,61.076,61.076v122.152c0,33.731-27.345,61.076-61.076,61.076h-122.151
+                            c-33.731,0-61.076-27.345-61.076-61.076v-122.152c0-0.17,0.001-0.338,0.002-0.508c-0.274-33.496-27.512-60.568-61.074-60.568
+                            c-0.158,0-0.315,0-0.473,0h-121.682c-33.731,0-61.076-27.345-61.076-61.076V2316.773z"/>
+                     <text x="1900" y="2595" fill="#252B37" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="340" font-weight="700" letter-spacing="2">icView</text>
+                </svg>
+
                 <div class="breadcrumb" id="breadcrumb"></div>
             </div>
+
             <div class="status-bar">
                 <div id="top-conn-indicator" class="conn-indicator">
                     <span class="led-dot"></span>
                     <span class="conn-text">Disconnected</span>
                 </div>
-                <span class="user-id">Instruct00</span>
+                <span class="user-id" id="fw-display">Fw:</span>
                 <span class="datetime" id="clock">-- --- ---- --:--:--</span>
             </div>
         </header>
@@ -84,7 +106,7 @@
             <main class="main-panel">
                 
                 <div id="view-home" class="view-section">
-                    <div class="home-placeholder"><h1>PARAMETER CONFIGURATOR</h1><p>Variable Speed Drive.</p></div>
+                    <div class="home-placeholder"><h1>USER-FRIENDLY SOFTWARE</h1><p>Intelligent Controller.</p></div>
                 </div>
 
                 <div id="view-default" class="view-section" style="display: none;">
@@ -309,7 +331,7 @@
                 <div id="view-chart-module" class="view-section" style="display: none;">
                     
                     <div class="chart-top-section">
-    
+                        
                         <div class="chart-grid-layout">
                             
                             <div class="chart-dropdown-group area-sampling">
@@ -322,7 +344,7 @@
                                     <option value="10000">10.0</option>
                                 </select>
                             </div>
-                    
+
                             <div class="chart-dropdown-group area-dropdown">
                                 <span class="chart-label">Variable</span>
                                 <select id="chart-var-select" class="chart-select">
@@ -353,19 +375,19 @@
                                     </optgroup>
                                 </select>
                             </div>
-                    
+
                             <button id="btn-swap-axis" class="btn-standard area-swap" onclick="swapVariableAxis()" disabled>Swap Axis ↔</button>
                             <button class="btn-standard area-add" onclick="addVariableToChart()">Add Variable</button>
-                    
+
                             <button class="btn-standard area-dht" onclick="addDHTGroup()">Add DHT Group</button>
                             <button class="btn-standard area-vsd" onclick="addVSDGroup()">Add VSD Group</button>
-                    
+
                             <button id="btn-clear-vars" class="btn-standard area-clear" onclick="clearAllVariables()" disabled>Clear All</button>
                             <button id="btn-remove-var" class="btn-standard area-remove" onclick="removeVariableFromChart()" disabled>Remove</button>
                         </div>
-                    
+
                         <div class="vertical-separator"></div>
-                    
+
                         <div style="display: flex; gap: 5px;">
                             <button id="btn-chart-start" class="btn-standard" onclick="startChart()" disabled style="font-weight: 900; color: #006400; height: 77px;">
                                 ▶ Start
@@ -379,7 +401,7 @@
                     <div class="chart-main-layout">
                         <div class="added-vars-box">
                             <ul id="chart-added-list" class="simple-list">
-                            </ul>
+                                </ul>
                         </div>
                         
                         <div class="chart-right-wrapper">
@@ -393,7 +415,7 @@
                                     <div id="legend-right" class="legend-group right"></div>
                                 </div>
                             </div>
-                    
+
                             <div class="chart-footer">
                                 <button id="btn-export-csv" class="btn-standard" onclick="exportChartToCSV()" disabled title="Export data to CSV">
                                     Export CSV

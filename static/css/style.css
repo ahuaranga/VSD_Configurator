@@ -8,7 +8,10 @@
     --highlight-blue: #2b65bd;      
     --active-row-bg: #6cf;          
     --font-main: 'Segoe UI', Tahoma, sans-serif;
-    --header-height: 84px; 
+    
+    /* CAMBIO: Reducido a 77px para alinear con la mitad del gap lateral */
+    --header-height: 77px; 
+    
     --btn-size: 54px;
     --toolbar-width: 80px;
     --input-bg: #eef6fa;
@@ -60,7 +63,16 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: var(--font-main);
     box-shadow: 0 2px 3px rgba(0,0,0,0.05); 
 }
 
-.header-left-group { display: flex; align-items: center; gap: 15px; }
+/* GRUPO IZQUIERDO: LOGO + BREADCRUMB (Horizontal) */
+.header-left-group { 
+    display: flex; 
+    flex-direction: row; /* Lado a lado */
+    align-items: center; /* Centrados verticalmente */
+    justify-content: flex-start; 
+    gap: 20px; /* Espacio generoso antes de la línea */
+    height: 100%;
+    padding-left: 10px;
+}
 
 /* =========================================
    3. BOTONES Y CONTROLES (ESTILO HMI)
@@ -100,10 +112,33 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: var(--font-main);
     filter: drop-shadow(0 0 1px rgba(46, 125, 50, 0.4)); 
 }
 
+
+/* Nuevo: Separador Horizontal para la Barra Lateral */
+.sidebar-separator {
+    width: 80%;       /* Ocupa el 50% del ancho de la barra */
+    height: 2px;      /* Grosor de la línea */
+    background-color: #bbb; /* Color gris suave */
+    margin: 5px auto; /* Centrado horizontalmente */
+    flex-shrink: 0;   /* Evita que se aplaste */
+    border-radius: 1px;
+}
+
 /* =========================================
    4. INDICADORES DE ESTADO (TOP BAR)
    ========================================= */
-.breadcrumb { font-weight: 600; font-size: 16px; color: #333; white-space: nowrap; }
+.breadcrumb { 
+    font-weight: 600; 
+    font-size: 16px; 
+    color: #333; 
+    white-space: nowrap; 
+    
+    /* SEPARADOR VISUAL */
+    border-left: 2px solid #ccc; 
+    padding-left: 20px; 
+    height: 40px; 
+    display: flex;
+    align-items: center;
+}
 
 .status-bar { 
     font-size: 14px; color: #444; font-weight: bold; white-space: nowrap; 
@@ -335,6 +370,7 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
     min-width: 120px; justify-content: center;
 }
 
+/* SELECTOR ANCHO (200px) */
 .chart-select {
     border: 1px solid #aaa; 
     border-radius: 0 4px 4px 0; 
@@ -372,15 +408,15 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
     display: flex; gap: 20px; height: calc(100vh - 250px); align-items: flex-start;
 }
 
-/* 2. Lista lateral ajustada al nuevo ancho total (120 + 200 = 320) */
+/* LISTA DE VARIABLES SINCRONIZADA */
 .added-vars-box {
     background-color: #ffffff; 
     border: 1px solid #7a9cc6;
     
-    /* CAMBIO: Aumentamos de 280px a 320px */
+    /* 320px = 200px (select) + 120px (label) */
     width: 320px; 
     
-    height: calc(100% - 56px); 
+    height: calc(100% - 56px); /* -56px para alinearse con el gráfico */
     overflow-y: auto; 
     padding: 5px;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); 
@@ -413,12 +449,8 @@ canvas { max-width: 100%; max-height: 100%; }
 
 /* Leyenda Personalizada */
 .custom-legend-container {
-    display: flex; 
-    justify-content: space-between; 
-    align-items: flex-start;
-    margin-top: 5px; 
-    padding-top: 5px; 
-    border-top: 1px solid #eee;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-top: 5px; padding-top: 5px; border-top: 1px solid #eee;
     min-height: 30px; 
     font-size: 14px;
 }

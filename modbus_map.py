@@ -8,6 +8,24 @@ Estructura: Clave de variable -> {dirección, tipo, escala, unidad, acceso}
 
 REGISTER_MAP = {
     # ==========================================
+    # GRUPO 0: FIRMWARE CONTROLLER (Solo lectura al inicio)
+    # ==========================================
+    "fw_ver_code": {
+        "address": 1,
+        "type": "uint",
+        "scale": 1,
+        "unit": "",
+        "access": "ro"
+    },
+    "fw_rel_code": {
+        "address": 2,
+        "type": "uint",
+        "scale": 1,
+        "unit": "",
+        "access": "ro"
+    },
+
+    # ==========================================
     # GRUPO 1: ALARMAS (Escritura/Lectura)
     # ==========================================
     # Setpoints de sobrecarga y subcarga
