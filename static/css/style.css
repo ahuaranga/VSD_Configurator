@@ -1,5 +1,5 @@
 /* =========================================
-   1. VARIABLES Y RESET
+   1. VARIABLES GLOBALES Y RESET
    ========================================= */
    :root {
     --bg-color: #f0f0f0;
@@ -14,7 +14,7 @@
     --input-bg: #eef6fa;
     --input-border: #7a9cc6;
     
-    /* ESTADOS LED */
+    /* COLORES LED INDICADORES */
     --led-gray: #999;
     --led-green: #4cd137;
     --text-connected: #2e7d32;
@@ -24,125 +24,235 @@
 body, html { margin: 0; padding: 0; height: 100%; font-family: var(--font-main); background-color: var(--bg-color); overflow: hidden; }
 
 /* =========================================
-   LAYOUT
+   2. ESTRUCTURA DE LAYOUT (FLEXBOX)
    ========================================= */
 .app-container { display: flex; height: 100vh; flex-direction: row; }
-.left-toolbar { width: var(--toolbar-width); background: linear-gradient(to right, #e8e8e8, #d0d0d0); border-right: 1px solid #999; display: flex; flex-direction: column; align-items: center; justify-content: space-between; z-index: 300; box-shadow: 2px 0 5px rgba(0,0,0,0.1); padding-top: 15px; padding-bottom: 15px; }
+
+/* Barra Lateral Izquierda */
+.left-toolbar { 
+    width: var(--toolbar-width); 
+    background: linear-gradient(to right, #e8e8e8, #d0d0d0); 
+    border-right: 1px solid #999; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: space-between; 
+    z-index: 300; 
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1); 
+    padding-top: 15px; 
+    padding-bottom: 15px; 
+}
+
 .toolbar-group { display: flex; flex-direction: column; gap: 15px; align-items: center; }
+
+/* Layout Derecho (Cabecera + Contenido) */
 .right-layout { flex: 1; display: flex; flex-direction: column; overflow: hidden; width: 100%; }
-.top-bar { background-color: var(--header-bg); border-bottom: 1px solid #bbb; height: var(--header-height); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; box-shadow: 0 2px 3px rgba(0,0,0,0.05); }
+
+/* Barra Superior */
+.top-bar { 
+    background-color: var(--header-bg); 
+    border-bottom: 1px solid #bbb; 
+    height: var(--header-height); 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    padding: 0 15px; 
+    box-shadow: 0 2px 3px rgba(0,0,0,0.05); 
+}
+
 .header-left-group { display: flex; align-items: center; gap: 15px; }
 
 /* =========================================
-   BOTONES
+   3. BOTONES Y CONTROLES (ESTILO HMI)
    ========================================= */
-.hmi-btn { width: var(--btn-size); height: var(--btn-size); background: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%); border: 1px solid #a0a0a0; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 2px rgba(0,0,0,0.15), inset 0 1px 0 #fff; flex-shrink: 0; transition: all 0.1s; }
+.hmi-btn { 
+    width: var(--btn-size); 
+    height: var(--btn-size); 
+    background: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%); 
+    border: 1px solid #a0a0a0; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    box-shadow: 0 2px 2px rgba(0,0,0,0.15), inset 0 1px 0 #fff; 
+    flex-shrink: 0; 
+    transition: all 0.1s; 
+}
+
 .hmi-btn:hover { background: #ffffff; border-color: #888; }
 .hmi-btn:active { background: #e0e0e0; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); transform: translateY(1px); }
+
 .text-icon-btn { font-weight: 900; font-size: 20px; color: #1a2d4c; font-family: 'Arial Black', sans-serif; }
 
-/* --- PRUEBA: Color Azul Profundo para Configuración --- */
-.config-btn {
-    color: #0d47a1; /* Azul Cobalto Oscuro */
-    transition: color 0.3s ease;
-}
-.config-btn:hover {
-    color: #002171; /* Azul Marino muy profundo al pasar el mouse */
-}
+/* Botón Configuración (Azul) */
+.config-btn { color: #0d47a1; transition: color 0.3s ease; }
+.config-btn:hover { color: #002171; }
 
-/* --- ESTILOS ESPECÍFICOS PARA EL BOTÓN MAESTRO DE COMUNICACIÓN --- */
+/* Botón Maestro de Comunicación (Toggle SVG) */
+.comm-btn-off .icon-disconnected { display: block; fill: #1a2d4c; }
+.comm-btn-off .icon-connected { display: none; }
 
-/* ESTADO: DESCONECTADO (Muestra icono separado oscuro) */
-.comm-btn-off .icon-disconnected {
-    display: block;
-    fill: #1a2d4c; /* Azul oscuro/Negro estándar */
-}
-.comm-btn-off .icon-connected {
-    display: none;
-}
-
-/* ESTADO: CONECTADO (Muestra icono unido verde) */
-.comm-btn-on .icon-disconnected {
-    display: none;
-}
-.comm-btn-on .icon-connected {
-    display: block;
-    fill: #2e7d32; /* Verde estándar */
-    filter: drop-shadow(0 0 1px rgba(46, 125, 50, 0.4)); /* Brillo sutil */
+.comm-btn-on .icon-disconnected { display: none; }
+.comm-btn-on .icon-connected { 
+    display: block; 
+    fill: #2e7d32; 
+    filter: drop-shadow(0 0 1px rgba(46, 125, 50, 0.4)); 
 }
 
 /* =========================================
-   INDICADORES Y ESTADO
+   4. INDICADORES DE ESTADO (TOP BAR)
    ========================================= */
 .breadcrumb { font-weight: 600; font-size: 16px; color: #333; white-space: nowrap; }
-.status-bar { font-size: 14px; color: #444; font-weight: bold; white-space: nowrap; display: flex; align-items: center; gap: 20px; }
-.conn-indicator { display: flex; align-items: center; gap: 8px; padding: 5px 12px; background-color: #dcdcdc; border-radius: 15px; border: 1px solid #bbb; transition: all 0.3s ease; }
-.led-dot { width: 12px; height: 12px; background-color: var(--led-gray); border-radius: 50%; box-shadow: inset 0 1px 2px rgba(0,0,0,0.3); transition: background-color 0.3s; }
+
+.status-bar { 
+    font-size: 14px; color: #444; font-weight: bold; white-space: nowrap; 
+    display: flex; align-items: center; gap: 20px; 
+}
+
+.conn-indicator { 
+    display: flex; align-items: center; gap: 8px; padding: 5px 12px; 
+    background-color: #dcdcdc; border-radius: 15px; border: 1px solid #bbb; 
+    transition: all 0.3s ease; 
+}
+
+.led-dot { 
+    width: 12px; height: 12px; background-color: var(--led-gray); 
+    border-radius: 50%; box-shadow: inset 0 1px 2px rgba(0,0,0,0.3); 
+    transition: background-color 0.3s; 
+}
+
 .conn-text { color: #666; transition: color 0.3s; }
+
 .conn-indicator.connected { background-color: #e8f5e9; border-color: #a5d6a7; }
 .conn-indicator.connected .led-dot { background-color: var(--led-green); box-shadow: 0 0 5px var(--led-green); }
 .conn-indicator.connected .conn-text { color: var(--text-connected); }
 
 /* =========================================
-   MENUS & CONTENT
+   5. MENÚS DESPLEGABLES (SIDEBARS)
    ========================================= */
 .content-area { display: flex; flex: 1; position: relative; overflow: hidden; background-color: #f4f4f4; }
-.sidebar-main, .sidebar-sub { background-color: #e0e0e0; border-right: 1px solid var(--border-color); overflow-y: auto; display: none; flex-direction: column; width: 200px; flex-shrink: 0; height: 100%; z-index: 100; }
+
+.sidebar-main, .sidebar-sub { 
+    background-color: #e0e0e0; border-right: 1px solid var(--border-color); 
+    overflow-y: auto; display: none; flex-direction: column; 
+    width: 200px; flex-shrink: 0; height: 100%; z-index: 100; 
+}
 .sidebar-sub { background-color: #dcdcdc; }
 .show-menu { display: flex !important; }
+
 ul { list-style: none; padding: 0; margin: 0; }
-li { padding: 12px 10px; cursor: pointer; border-bottom: 1px solid #ccc; font-size: 14px; display: flex; justify-content: space-between; color: #000; transition: background 0.1s; }
+li { 
+    padding: 12px 10px; cursor: pointer; border-bottom: 1px solid #ccc; 
+    font-size: 14px; display: flex; justify-content: space-between; 
+    color: #000; transition: background 0.1s; 
+}
 li:hover { background-color: #d0d0d0; }
 li.selected { background-color: var(--highlight-blue); color: white; font-weight: bold; }
 li.has-child::after { content: '▸'; }
 
 /* =========================================
-   FORMULARIOS Y PANELES
+   6. PANELES Y FORMULARIOS (VIEWS)
    ========================================= */
 .main-panel { flex: 1; padding: 15px; overflow-y: auto; position: relative; }
-.home-placeholder { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; pointer-events: none; user-select: none; }
-.home-placeholder h1 { font-size: 42px; margin: 0; color: rgba(0, 0, 0, 0.08); font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
-.home-placeholder p { font-size: 24px; margin-top: 10px; color: rgba(0, 0, 0, 0.15); font-weight: 600; }
+
+.home-placeholder { 
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+    text-align: center; width: 100%; pointer-events: none; user-select: none; 
+}
+.home-placeholder h1 { 
+    font-size: 42px; margin: 0; color: rgba(0, 0, 0, 0.08); 
+    font-weight: 900; letter-spacing: 2px; text-transform: uppercase; 
+}
+.home-placeholder p { 
+    font-size: 24px; margin-top: 10px; color: rgba(0, 0, 0, 0.15); font-weight: 600; 
+}
+
 .columns-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 .stack-container { display: flex; flex-direction: column; gap: 15px; }
-.control-box, fieldset.group-box { border: 1px solid #999; border-radius: 5px; padding: 10px; margin: 0; background: #fff; min-width: 0; }
-.control-box { display: flex; align-items: stretch; padding: 0; margin-bottom: 15px; overflow: hidden; }
-.highlight-box .box-header { background: #aadef0; padding: 0 10px; border-right: 1px solid #999; display: flex; align-items: center; font-weight: bold; min-width: 80px; }
+
+.control-box, fieldset.group-box { 
+    border: 1px solid #999; border-radius: 5px; padding: 10px; margin: 0; 
+    background: #fff; min-width: 0; 
+}
+.control-box { 
+    display: flex; align-items: stretch; padding: 0; 
+    margin-bottom: 15px; overflow: hidden; 
+}
+
+.highlight-box .box-header { 
+    background: #aadef0; padding: 0 10px; border-right: 1px solid #999; 
+    display: flex; align-items: center; font-weight: bold; min-width: 80px; 
+}
 .highlight-box .box-content { flex: 1; padding: 5px; }
+
 legend { color: #444; font-weight: bold; padding: 0 5px; }
-.form-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; gap: 8px; padding: 3px; border: 1px solid transparent; border-radius: 3px; cursor: pointer; transition: background-color 0.1s; }
+
+.form-row { 
+    display: flex; justify-content: space-between; align-items: center; 
+    margin-bottom: 8px; font-size: 13px; gap: 8px; padding: 3px; 
+    border: 1px solid transparent; border-radius: 3px; cursor: pointer; 
+    transition: background-color 0.1s; 
+}
 .form-row:hover { background-color: #e6e6e6; }
 .form-row label { flex: 1; white-space: nowrap; cursor: pointer; }
+
 .active-param { background-color: var(--active-row-bg) !important; border: 1px solid #5bd; }
 .highlight-cyan { background-color: #6cf; padding: 3px; border-radius: 3px; margin: -3px -3px 8px -3px; }
 .label-center { justify-content: center; font-weight: bold; margin: 10px 0; }
+
 .checkbox-row { justify-content: flex-start; gap: 10px; }
 .checkbox-row input { flex: 0; width: auto; }
-input, select { flex: 1; min-width: 80px; max-width: 100%; padding: 4px; border: 1px solid var(--input-border); background-color: var(--input-bg); border-radius: 3px; font-size: 13px; outline: none; }
+
+input, select { 
+    flex: 1; min-width: 80px; max-width: 100%; padding: 4px; 
+    border: 1px solid var(--input-border); background-color: var(--input-bg); 
+    border-radius: 3px; font-size: 13px; outline: none; 
+}
 input:focus, select:focus { border-color: var(--highlight-blue); }
+
 .full-width-select { width: 100%; }
 .blue-select { background: linear-gradient(to bottom, #a8cbf7, #85b1e6); font-weight: bold; }
 .input-transparent { border: none; background: transparent; }
 .input-right { text-align: right; }
 .input-disabled { background-color: #e0e0e0; color: #666; border-color: #ccc; }
-.btn-gray { background: #ccc; border: 1px solid #999; border-radius: 3px; padding: 2px 10px; cursor: pointer; font-weight: bold; }
+
+.btn-gray { 
+    background: #ccc; border: 1px solid #999; border-radius: 3px; 
+    padding: 2px 10px; cursor: pointer; font-weight: bold; 
+}
 .bypass-text { font-weight: bold; color: #555; margin-left: 10px; }
 .value-text { font-weight: bold; padding: 4px; }
-.info-panel { background-color: #f0f0f0; border: 1px solid #ccc; padding: 10px; font-size: 12px; color: #333; line-height: 1.4; }
+.info-panel { 
+    background-color: #f0f0f0; border: 1px solid #ccc; padding: 10px; 
+    font-size: 12px; color: #333; line-height: 1.4; 
+}
 
 /* =========================================
-   MODALS
+   7. VENTANAS MODALES (POP-UPS)
    ========================================= */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); display: flex; justify-content: center; align-items: center; z-index: 2000; }
-.modal-window { background: #e8e8e8; padding: 10px; border-radius: 5px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 320px; border: 1px solid #999; }
+.modal-overlay { 
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(0, 0, 0, 0.4); display: flex; justify-content: center; 
+    align-items: center; z-index: 2000; 
+}
+.modal-window { 
+    background: #e8e8e8; padding: 10px; border-radius: 5px; 
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 320px; border: 1px solid #999; 
+}
 .modal-fieldset { margin: 0; background: #f0f0f0; border: 1px solid #aaa; }
 .modal-fieldset legend { background-color: transparent; font-weight: bold; color: #444; }
-.modal-btn { width: 100%; padding: 8px; background: linear-gradient(to bottom, #a8cbf7, #85b1e6); border: 1px solid #5588c7; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px; margin-bottom: 2px; }
+
+.modal-btn { 
+    width: 100%; padding: 8px; background: linear-gradient(to bottom, #a8cbf7, #85b1e6); 
+    border: 1px solid #5588c7; border-radius: 4px; font-weight: bold; 
+    cursor: pointer; font-size: 14px; margin-bottom: 2px; 
+}
 .modal-btn:hover { background: #8ec0f8; }
 .modal-btn:active { transform: translateY(1px); }
 
 /* =========================================
-   PANEL CENTRAL DE ESTADO
+   8. PANEL DE ESTADO DE CONEXIÓN
    ========================================= */
 .center-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -152,31 +262,27 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
 }
 
 .status-box {
-    background: #fff;
-    padding: 20px;
-    border: 2px solid #1a2d4c;
-    border-radius: 8px;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.5);
-    width: 350px;
-    text-align: center;
+    background: #fff; padding: 20px; border: 2px solid #1a2d4c;
+    border-radius: 8px; box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+    width: 350px; text-align: center;
 }
-
 .status-box h3 { margin-top: 0; color: #1a2d4c; }
 
 .progress-container { margin-top: 15px; display: flex; flex-direction: column; gap: 5px; }
 .status-detail { font-size: 13px; font-weight: bold; color: #555; margin-top: 5px; }
-.progress-bar-bg { width: 100%; height: 22px; background-color: #e0e0e0; border: 1px solid #999; border-radius: 3px; overflow: hidden; position: relative; }
-.progress-bar-fill { height: 100%; width: 0%; background-color: #008000; transition: width 0.1s linear; }
-
-/* RESPONSIVE */
-@media (max-width: 1024px) { .sidebar-main, .sidebar-sub { position: absolute; top: 0; bottom: 0; left: 0; box-shadow: 4px 0 10px rgba(0,0,0,0.2); } .sidebar-sub { z-index: 102; left: 0; } .sidebar-main { z-index: 101; } }
-@media (max-width: 768px) { .columns-container { grid-template-columns: 1fr; } .status-bar .user-id { display: none; } .left-toolbar { width: 65px; } }
+.progress-bar-bg { 
+    width: 100%; height: 22px; background-color: #e0e0e0; border: 1px solid #999; 
+    border-radius: 3px; overflow: hidden; position: relative; 
+}
+.progress-bar-fill { 
+    height: 100%; width: 0%; background-color: #008000; transition: width 0.1s linear; 
+}
 
 /* =========================================
-   ESTILOS VISTA GRAFICADOR (Chart Module)
+   9. ESTILOS VISTA GRAFICADOR (Chart Module)
    ========================================= */
 
-/* Contenedor principal alineado al fondo (Start/Stop abajo) */
+/* Contenedor principal alineado al fondo */
 .chart-top-section {
     display: flex;
     align-items: flex-end; 
@@ -184,23 +290,17 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
     margin-bottom: 20px;
 }
 
-/* 1. LA CUADRÍCULA DE CONTROL (Grid Layout - "L" Invertida + Sampling) */
+/* Grilla de Controles */
 .chart-grid-layout {
     display: grid;
-    /* Col 1: Dropdown (flexible)
-       Col 2: Botones Columna A (130px fijo)
-       Col 3: Botones Columna B (130px fijo) */
     grid-template-columns: auto 130px 130px;
-    grid-template-rows: 36px 36px; /* Altura de filas idéntica */
-    gap: 5px; /* Espacio entre elementos */
-    
-    /* MAPA DE ÁREAS */
+    grid-template-rows: 36px 36px;
+    gap: 5px;
     grid-template-areas:
         "sampling swap    clear"
         "dropdown add     remove";
 }
 
-/* Asignación de áreas a los elementos */
 .area-dropdown { grid-area: dropdown; display: flex; align-items: center; }
 .area-sampling { grid-area: sampling; display: flex; align-items: center; }
 .area-swap     { grid-area: swap; }
@@ -208,241 +308,145 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
 .area-add      { grid-area: add; }
 .area-remove   { grid-area: remove; }
 
-/* Estilo para que los botones llenen su celda de la grid */
 .chart-grid-layout .btn-standard {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0 10px; 
+    width: 100%; height: 100%; margin: 0; padding: 0 10px; 
 }
 
-/* Separador Vertical (Alto total = 36 + 36 + 5 = 77px) */
+/* Separador Vertical */
 .vertical-separator {
-    width: 1px;
-    height: 77px; 
-    background: #ccc;
-    margin: 0 5px;
+    width: 1px; height: 77px; background: #ccc; margin: 0 5px;
 }
 
-/* CONTENEDOR FLEX PARA EL SAMPLING */
-.chart-dropdown-group {
-    display: flex;
-    align-items: center;
-}
+/* Etiquetas y Selectores */
+.chart-dropdown-group { display: flex; align-items: center; }
 
-/* ETIQUETA FIJA (Ancho fijo para igualar Sampling y Variable) */
 .chart-label {
-    background-color: #e0e0e0;
-    color: #000;
-    font-weight: 600;
-    padding: 0 10px;
-    border: 1px solid #aaa;
-    border-right: none;
-    border-radius: 4px 0 0 4px;
-    font-size: 14px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    min-width: 120px; /* Igualamos ambos recuadros grises */
-    justify-content: center;
+    background-color: #e0e0e0; color: #000; font-weight: 600; padding: 0 10px;
+    border: 1px solid #aaa; border-right: none; border-radius: 4px 0 0 4px;
+    font-size: 14px; height: 36px; display: flex; align-items: center;
+    min-width: 120px; justify-content: center;
 }
 
-/* Selector reducido */
 .chart-select {
-    border: 1px solid #aaa;
-    border-radius: 0 4px 4px 0;
-    padding: 0 10px;
-    height: 36px;
-    font-size: 14px;
-    width: 220px; /* Ancho fijo reducido */
-    background-color: white;
-    outline: none;
-    font-weight: normal;
-    text-align: left; /* Alineado a la izquierda */
+    border: 1px solid #aaa; border-radius: 0 4px 4px 0; padding: 0 10px;
+    height: 36px; font-size: 14px; width: 220px; background-color: white;
+    outline: none; font-weight: normal; text-align: left;
+}
+.chart-select:focus { border-color: var(--highlight-blue); }
+
+.group-master-option {
+    font-weight: 900; color: var(--highlight-blue); background-color: #f0f8ff;
 }
 
-.chart-select:focus {
-    border-color: var(--highlight-blue);
-}
-
-/* Botones estándar (Estilo base) */
+/* Botones estándar */
 .btn-standard {
-    background-color: #e0e0e0;
-    border: 1px solid #999;
-    padding: 0 15px; 
-    font-size: 13px;
-    font-weight: 600;
-    color: #333;
-    cursor: pointer;
-    border-radius: 2px;
-    transition: background 0.2s;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    background-color: #e0e0e0; border: 1px solid #999; padding: 0 15px; 
+    font-size: 13px; font-weight: 600; color: #333; cursor: pointer;
+    border-radius: 2px; transition: background 0.2s;
+    display: inline-flex; align-items: center; justify-content: center;
 }
-
-.btn-standard:hover {
-    background-color: #d0d0d0;
-    border-color: #666;
-}
-
-.btn-standard:active {
-    background-color: #ccc;
-    transform: translateY(1px);
-}
-
+.btn-standard:hover { background-color: #d0d0d0; border-color: #666; }
+.btn-standard:active { background-color: #ccc; transform: translateY(1px); }
 .btn-standard:disabled {
-    color: #a0a0a0 !important;
-    background-color: #f4f4f4;
-    border-color: #d0d0d0;
-    cursor: not-allowed;
-    transform: none;
+    color: #a0a0a0 !important; background-color: #f4f4f4; border-color: #d0d0d0;
+    cursor: not-allowed; transform: none;
 }
 
-/* --- LAYOUT PRINCIPAL: LISTA + GRÁFICO --- */
+/* Layout Grafico + Lista */
 .chart-main-layout {
-    display: flex;
-    gap: 20px;
-    height: calc(100vh - 250px);
-    align-items: flex-start;
+    display: flex; gap: 20px; height: calc(100vh - 250px); align-items: flex-start;
 }
 
-/* Lista a la izquierda */
 .added-vars-box {
-    background-color: #ffffff;
-    border: 1px solid #7a9cc6;
-    width: 300px;
-    height: 100%;
-    overflow-y: auto;
-    padding: 5px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
-    flex-shrink: 0;
+    background-color: #ffffff; border: 1px solid #7a9cc6;
+    width: 300px; height: 100%; overflow-y: auto; padding: 5px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0;
 }
 
 .simple-list { list-style: none; padding: 0; margin: 0; }
 .simple-list li {
-    padding: 8px;
-    font-size: 14px;
-    border-bottom: 1px solid #f0f0f0;
-    color: #000;
-    cursor: pointer;
+    padding: 8px; font-size: 14px; border-bottom: 1px solid #f0f0f0;
+    color: #000; cursor: pointer;
 }
 .simple-list li.selected {
-    background-color: var(--active-row-bg) !important;
-    color: #000;
-    font-weight: bold;
+    background-color: var(--active-row-bg) !important; color: #000; font-weight: bold;
 }
 
-/* NUEVA COLUMNA DERECHA (Wrapper) */
+/* Contenedor Canvas */
 .chart-right-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    gap: 10px;
-    min-width: 0; /* Previene desbordamientos flex */
+    flex: 1; display: flex; flex-direction: column;
+    height: 100%; gap: 10px; min-width: 0;
 }
 
-/* AJUSTE: Contenedor principal ahora es columna para apilar gráfica y leyenda */
 .chart-container {
-    flex: 1;
-    background-color: #fff;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 10px;
-    display: flex;
-    flex-direction: column; /* Cambio clave: Columna */
-    justify-content: space-between;
-    align-items: stretch;
-    height: 100%;
-    position: relative;
-    overflow: hidden;
+    flex: 1; background-color: #fff; border: 1px solid #ccc;
+    border-radius: 4px; padding: 10px; display: flex;
+    flex-direction: column; justify-content: space-between;
+    align-items: stretch; height: 100%; position: relative; overflow: hidden;
 }
 
-canvas {
-    max-width: 100%;
-    max-height: 100%;
-}
+canvas { max-width: 100%; max-height: 100%; }
 
-/* --- ESTILOS DE LA NUEVA LEYENDA PARTIDA --- */
+/* Leyenda Personalizada */
 .custom-legend-container {
-    display: flex;
-    justify-content: space-between; /* Separa izquierda y derecha al máximo */
-    align-items: flex-start;
-    margin-top: 5px;
-    padding-top: 5px;
-    border-top: 1px solid #eee;
-    min-height: 30px;
-    font-size: 12px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-top: 5px; padding-top: 5px; border-top: 1px solid #eee;
+    min-height: 30px; font-size: 12px;
 }
 
 .legend-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    max-width: 48%; /* Para que no se encimen */
+    display: flex; flex-wrap: wrap; gap: 10px; max-width: 48%;
 }
-
-.legend-group.left {
-    justify-content: flex-start; /* Alineado a la Izquierda */
-}
-
-.legend-group.right {
-    justify-content: flex-end; /* Alineado a la Derecha */
-}
+.legend-group.left { justify-content: flex-start; }
+.legend-group.right { justify-content: flex-end; }
 
 .legend-item {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    opacity: 1;
-    transition: opacity 0.2s;
-    user-select: none;
-    background: #f9f9f9;
-    padding: 2px 6px;
-    border-radius: 4px;
-    border: 1px solid #eee;
+    display: flex; align-items: center; cursor: pointer; opacity: 1;
+    transition: opacity 0.2s; user-select: none; background: #f9f9f9;
+    padding: 2px 6px; border-radius: 4px; border: 1px solid #eee;
 }
-
-.legend-item:hover {
-    background: #e0e0e0;
-}
-
-.legend-item.hidden {
-    opacity: 0.4;
-    text-decoration: line-through;
-}
+.legend-item:hover { background: #e0e0e0; }
+.legend-item.hidden { opacity: 0.4; text-decoration: line-through; }
 
 .legend-color-box {
-    width: 12px;
-    height: 12px;
-    margin-right: 6px;
-    border-radius: 2px;
-    display: inline-block;
+    width: 12px; height: 12px; margin-right: 6px;
+    border-radius: 2px; display: inline-block;
 }
 
-/* --- NUEVA CLASE PARA TEXTOS ESTÁTICOS ALINEADOS A LA IZQUIERDA --- */
-.value-left {
-    flex: 1;
-    text-align: left;
-    padding: 4px;
-    padding-left: 5px;
-}
-
-/* --- NUEVOS ESTILOS EXPORTAR CSV --- */
-.chart-footer {
-    display: flex;
-    justify-content: flex-end; /* Alineación derecha */
-}
+/* Footer (Botón CSV) */
+.chart-footer { display: flex; justify-content: flex-end; }
 
 #btn-export-csv {
-    background-color: #e8f5e9; /* Verde muy suave */
+    background-color: #e8f5e9; 
     border-color: #a5d6a7;
     color: #2e7d32;
     font-weight: bold;
+    padding: 6px; 
+    width: 46px; 
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
 }
+
+#btn-export-csv:hover { background-color: #c8e6c9; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+#btn-export-csv:active { transform: translateY(1px); }
 #btn-export-csv:disabled {
-    background-color: #f4f4f4;
-    border-color: #d0d0d0;
-    color: #a0a0a0;
+    background-color: #f4f4f4; border-color: #d0d0d0; color: #a0a0a0;
+    box-shadow: none; opacity: 0.6; cursor: not-allowed;
+}
+
+#btn-export-csv svg { width: 28px; height: 28px; display: block; }
+
+/* RESPONSIVE */
+@media (max-width: 1024px) { 
+    .sidebar-main, .sidebar-sub { position: absolute; top: 0; bottom: 0; left: 0; box-shadow: 4px 0 10px rgba(0,0,0,0.2); } 
+    .sidebar-sub { z-index: 102; left: 0; } 
+    .sidebar-main { z-index: 101; } 
+}
+@media (max-width: 768px) { 
+    .columns-container { grid-template-columns: 1fr; } 
+    .status-bar .user-id { display: none; } 
+    .left-toolbar { width: 65px; } 
 }

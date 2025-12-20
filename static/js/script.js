@@ -2,10 +2,25 @@
 // 0. MAPA DE VINCULACIÓN Y VARIABLES GLOBALES
 // =========================================================
 const TAG_MAP = {
+    // GRUPO 1: ALARMAS
     'overcurrent': 'vsd_ol_setpoint_0',
     'undercurrent': 'vsd_ul_setpoint',
+    
+    // GRUPO 2: MONITORIZACIÓN VSD (GENERAL)
     'vsd_supply_voltage': 'vsd_supply_voltage',
     'vsd_temperature': 'vsd_temperature',
+
+    // GRUPO 3: VARIABLE SPEED DRIVE (VSD)
+    'vsd_motor_rpm': 'vsd_motor_rpm',
+    'vsd_frequency_out': 'vsd_frequency_out',
+    'vsd_current': 'vsd_current',
+    'vsd_motor_current': 'vsd_motor_current',
+    // --- NUEVOS REGISTROS (Volts In/Out) ---
+    'vsd_volts_in': 'vsd_volts_in',
+    'vsd_volts_out': 'vsd_volts_out',
+    // ---------------------------------------
+
+    // GRUPO 4: DOWN HOLE TOOL (DHT)
     'dht_intake_pressure': 'dht_intake_pressure',
     'dht_discharge_pressure': 'dht_discharge_pressure',
     'dht_intake_temp': 'dht_intake_temp',
@@ -23,6 +38,18 @@ const UNIT_MAP = {
     'vsd_temperature': '°C',
     'overcurrent': 'A',
     'undercurrent': 'A',
+    
+    // UNIDADES VSD
+    'vsd_motor_rpm': 'RPM',
+    'vsd_frequency_out': 'Hz',
+    'vsd_current': 'A',
+    'vsd_motor_current': 'A',
+    // --- NUEVAS UNIDADES ---
+    'vsd_volts_in': 'V',
+    'vsd_volts_out': 'V',
+    // -----------------------
+
+    // UNIDADES DHT
     'dht_intake_pressure': 'psi',
     'dht_discharge_pressure': 'psi',
     'dht_intake_temp': '°C',
@@ -35,6 +62,7 @@ const UNIT_MAP = {
     'dht_diff_pressure': 'psi'
 };
 
+// --- CONFIGURACION DE PUERTO (Valores por defecto) ---
 let savedConfig = {
     port: null,
     baudrate: 19200,
@@ -44,6 +72,7 @@ let savedConfig = {
     timeout: 1
 };
 
+// --- VARIABLES DE ESTADO ---
 let connectionInterval = null; 
 let pollingInterval = null;    
 let isCommActive = false;      
@@ -54,6 +83,7 @@ let isCharting = false;
 let chartInterval = null;    
 let chartPollingRate = 1000; 
 
+// --- ESTRUCTURA DEL MENU ---
 const menuData = [
     { id: 1, name: "VSD", subItems: ["Operator", "Summary", "Alarms", "Speed", "Time", "Configure", "Expert", "Gas Lock", "PMM Configure", "PMM Configure 2", "Diagnostics"] },
     { id: 2, name: "DHT", subItems: ["Status", "Settings"] },
@@ -77,6 +107,10 @@ let currentSubIndex = -1;
 let currentViewRows = [];
 let currentFocusIndex = 0;
 let currentEditingId = '';
+
+// =========================================================
+// 1. GESTIÓN DE INTERFAZ Y NAVEGACIÓN (Teclado/Mouse)
+// =========================================================
 
 document.addEventListener('keydown', (e) => {
     const alarmOpen = document.getElementById('alarm-modal').style.display === 'flex';
@@ -152,6 +186,10 @@ function jumpBlock(direction) {
     }
     if (found) setActiveRow(targetIndex);
 }
+
+// =========================================================
+// 2. MODALES Y CONFIGURACIÓN (Alarmas y Puertos)
+// =========================================================
 
 function openAlarmModal(idSuffix, titleText) {
     currentEditingId = idSuffix;
@@ -266,30 +304,26 @@ function readConfigFromDOM() {
 function applyConfigParams() { if(readConfigFromDOM()) console.log("Config applied."); }
 function okConfigParams() { if(readConfigFromDOM()) closeConfigModal(); }
 
-// NUEVA FUNCIÓN MAESTRA PARA TOGGLE (Conectar/Desconectar)
+// =========================================================
+// 3. COMUNICACIÓN MODBUS (Conectar/Desconectar/Leer)
+// =========================================================
+
 function toggleMasterCommunication() {
     if (isCommActive) {
-        // Si está activo -> Paramos
         stopCommunication();
     } else {
-        // Si está inactivo -> Arrancamos
         startCommunication();
     }
 }
 
-// ACTUALIZA VISUALMENTE EL BOTÓN ÚNICO
 function updateMasterCommButton() {
     const btn = document.getElementById('btn-master-comm');
-    
     if (!btn) return;
-
     if (isCommActive) {
-        // ESTADO: CONECTADO
         btn.classList.remove('comm-btn-off');
         btn.classList.add('comm-btn-on');
         btn.title = "Disconnect";
     } else {
-        // ESTADO: DESCONECTADO
         btn.classList.remove('comm-btn-on');
         btn.classList.add('comm-btn-off');
         btn.title = "Connect";
@@ -441,40 +475,24 @@ function setTopLed(isConnected) {
 }
 
 // =========================================================
-// GESTIÓN DE MENÚ Y BREADCRUMB (Actualizado)
+// 4. LÓGICA DE MENÚS Y PANELES
 // =========================================================
 
 function toggleMenuSystem() { 
-    // 1. Detectar si estamos atrapados en el Graficador
+    // Detectar si estamos atrapados en el Graficador
     const chartModule = document.getElementById('view-chart-module');
     const isChartActive = (chartModule.style.display === 'block');
 
     if (isChartActive) {
-        // === SALIENDO DEL MODO GRÁFICO ===
-        
-        // A. Ocultar el graficador siempre
         chartModule.style.display = 'none';
-
-        // B. Verificar si teníamos algo seleccionado en el menú principal
         if (currentMainIndex !== -1) {
-            
-            // Recuperamos los datos de la categoría seleccionada (ej. VSD)
             const mainData = menuData[currentMainIndex];
-
-            // 1. Restaurar selección visual en la lista principal (Lado Izquierdo)
             if (mainList.children[currentMainIndex]) {
                 mainList.children[currentMainIndex].classList.add('selected');
             }
-            
-            // 2. Regenerar la lista de sub-items (Lado Derecho)
             renderSubMenu(mainData);
-            
-            // 3. Abrimos el menú visualmente
             isMenuOpen = true;
-
-            // C. Decidir qué vista mostrar (Profunda o Superficial)
             if (currentSubIndex !== -1) {
-                // CASO 1: Tenías una sub-opción seleccionada (ej. Speed)
                 const subName = mainData.subItems[currentSubIndex];
                 breadcrumb.innerText = `Menu > ${mainData.name} > ${subName}`;
                 loadView(subName); 
@@ -482,32 +500,20 @@ function toggleMenuSystem() {
                     subList.children[currentSubIndex].classList.add('selected');
                 }
             } else {
-                // CASO 2: Solo tenías la categoría seleccionada (ej. VSD)
                 breadcrumb.innerText = `Menu > ${mainData.name}`;
                 showSection('view-home'); 
             }
-
         } else {
-            // CASO 3: No había nada seleccionado, venías de Home.
-            // 1. Limpiamos la vista base (Home)
             goHome(); 
-            
-            // 2. CORRECCIÓN: Forzamos la apertura del menú inmediatamente
             isMenuOpen = true;
             breadcrumb.innerText = "Menu";
         }
-
     } else {
-        // === COMPORTAMIENTO NORMAL (NO GRÁFICO) ===
         isMenuOpen = !isMenuOpen;
-        
-        // Ajuste de Breadcrumb solo si abrimos menú y no hay selección
         if (isMenuOpen && currentMainIndex === -1) {
             breadcrumb.innerText = "Menu";
         }
     }
-    
-    // Aplicar clases CSS para mostrar/ocultar paneles
     updateMenuVisibility(); 
 }
 
@@ -517,10 +523,7 @@ function goHome() {
     currentSubIndex = -1;
     Array.from(mainList.children).forEach(el => el.classList.remove('selected'));
     Array.from(subList.children).forEach(el => el.classList.remove('selected'));
-    
-    // Breadcrumb cambia a "Home"
     breadcrumb.innerText = "Home";
-    
     updateMenuVisibility(); 
     showSection('view-home');
     currentViewRows = [];
@@ -530,10 +533,8 @@ function downloadConfig() { alert("Report download functionality in development.
 
 function updateCustomLegend() {
     if (!myChart) return;
-
     const leftContainer = document.getElementById('legend-left');
     const rightContainer = document.getElementById('legend-right');
-    
     leftContainer.innerHTML = '';
     rightContainer.innerHTML = '';
 
@@ -569,6 +570,10 @@ function updateCustomLegend() {
         }
     });
 }
+
+// =========================================================
+// 5. LÓGICA DE GRÁFICOS (CHART.JS)
+// =========================================================
 
 function initChart() {
     const ctx = document.getElementById('realtimeChart').getContext('2d');
@@ -606,10 +611,7 @@ function openChartModule() {
     if (target.style.display === 'block') return; 
     document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
     target.style.display = 'block';
-    
-    // Breadcrumb cambia a "Chart"
     document.getElementById('breadcrumb').innerText = "Chart"; 
-    
     isMenuOpen = false;
     updateMenuVisibility();
     Array.from(mainList.children).forEach(el => el.classList.remove('selected'));
@@ -657,10 +659,7 @@ function handleMainClick(index, element) {
     currentMainIndex = index; currentSubIndex = -1; 
     Array.from(mainList.children).forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
-    
-    // Breadcrumb: Menu > [Categoria]
     document.getElementById('breadcrumb').innerText = `Menu > ${menuData[index].name}`;
-    
     renderSubMenu(menuData[index]);
 }
 
@@ -683,10 +682,7 @@ function handleSubClick(index, name, element) {
     Array.from(subList.children).forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
     const mainName = menuData[currentMainIndex].name;
-    
-    // Breadcrumb: Menu > [Categoria] > [SubItem]
     document.getElementById('breadcrumb').innerText = `Menu > ${mainName} > ${name}`;
-    
     loadView(name);
 }
 
@@ -758,13 +754,8 @@ function init() {
     });
     setInterval(updateClock, 1000); 
     updateClock(); 
-    
-    // Primero vamos a Home para resetear todo
     goHome();
-    
-    // LUEGO, limpiamos el breadcrumb para que arranque vacío
     document.getElementById('breadcrumb').innerText = "";
-    
     setTimeout(initDropdownLogic, 100); 
     setTimeout(toggleExtendedFreq, 100); 
     setTimeout(togglePMMFields, 100); 
@@ -933,9 +924,8 @@ function updateChartButtons() {
         }
     }
 
-    // Lógica Exportar CSV: Solo si hay datos y está detenido
+    // Lógica Exportar CSV
     const hasData = (myChart && myChart.data.labels.length > 0);
-    
     if (hasData && !isCharting) {
         btnExport.disabled = false;
     } else {
@@ -993,14 +983,11 @@ function updateChartData() {
     });
 }
 
-// NUEVA FUNCIÓN DE EXPORTACIÓN
 function exportChartToCSV() {
     if (!myChart || myChart.data.labels.length === 0) {
         alert("No data to export.");
         return;
     }
-
-    // 1. Cabecera
     let csvContent = "data:text/csv;charset=utf-8,";
     let header = ["Time"];
     
@@ -1010,7 +997,6 @@ function exportChartToCSV() {
     });
     csvContent += header.join(",") + "\r\n";
 
-    // 2. Datos
     myChart.data.labels.forEach((label, i) => {
         let row = [label];
         myChart.data.datasets.forEach(ds => {
@@ -1020,7 +1006,6 @@ function exportChartToCSV() {
         csvContent += row.join(",") + "\r\n";
     });
 
-    // 3. Descarga
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
