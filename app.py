@@ -1,4 +1,3 @@
-
 import os
 import sys
 import webbrowser
@@ -32,10 +31,17 @@ def init_db():
         with sqlite3.connect(DB_NAME) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                'CREATE TABLE IF NOT EXISTS config_serial (id INTEGER PRIMARY KEY, puerto TEXT, baudrate INTEGER)')
+                'CREATE TABLE IF NOT EXISTS config_serial (id INTEGER PRIMARY KEY, puerto TEXT, baudrate INTEGER)'
+            )
             conn.commit()
     except:
         pass
+
+
+# IMPORTANTE:
+# En Render (Gunicorn) NO se ejecuta el bloque __main__,
+# así que la DB debe inicializarse también cuando el módulo se carga.
+init_db()
 
 
 @app.route('/')
@@ -43,24 +49,19 @@ def home():
     return render_template('index.html')
 
 
+# -------------------------------------------------------------------------
+# 2. ENDPOINTS API
+# -------------------------------------------------------------------------
 @app.route('/api/ports')
 def get_ports():
-    ports_data = []
-    try:
-        ports = serial.tools.list_ports.comports()
-        for port in ports:
-            ports_data.append({"device": port.device, "description": port.description})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    return jsonify(ports_data)
+    """Lista puertos serial disponibles"""
+    ports = serial.tools.list_ports.comports()
+    return jsonify([p.device for p in ports])
 
-
-# -------------------------------------------------------------------------
-# 3. LÓGICA MODBUS (CONECTAR, LEER, ESCRIBIR)
-# -------------------------------------------------------------------------
 
 @app.route('/api/connect', methods=['POST'])
-def connect_instrument():
+def connect_modbus():
+    """Conecta a Modbus RTU según puerto y baudrate enviados"""
     global instrument
     data = request.json
 
@@ -75,48 +76,93 @@ def connect_instrument():
             instrument = None
 
         try:
-            instrument = minimalmodbus.Instrument(data['port'], 1)
-            instrument.serial.baudrate = int(data.get('baudrate', 19200))
-            instrument.serial.bytesize = int(data.get('bytesize', 8))
-            instrument.serial.parity = data.get('parity', 'E')
-            instrument.serial.stopbits = int(data.get('stopbits', 1))
-            instrument.serial.timeout = float(data.get('timeout', 1))
+            port = data.get('port')
+            baud = int(data.get('baudrate', 9600))
+            slave = int(data.get('slave', 1))
+
+            instrument = minimalmodbus.Instrument(port, slave)
+            instrument.serial.baudrate = baud
+            instrument.serial.timeout = 0.2
             instrument.mode = minimalmodbus.MODE_RTU
 
-            # Prueba de lectura para confirmar conexión (Overcurrent 717)
-            instrument.read_register(717, 0)
+            # Guardar configuración
+            try:
+                with sqlite3.connect(DB_NAME) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('DELETE FROM config_serial')
+                    cursor.execute('INSERT INTO config_serial (puerto, baudrate) VALUES (?, ?)', (port, baud))
+                    conn.commit()
+            except:
+                pass
 
-            return jsonify({"status": "success", "message": "Conexión Exitosa"})
+            return jsonify({"status": "connected", "port": port, "baudrate": baud, "slave": slave})
+
         except Exception as e:
             instrument = None
-            print(f"Error Modbus: {e}")
-            return jsonify({"status": "error", "message": str(e)}), 500
+            return jsonify({"status": "error", "error": str(e)}), 500
 
 
 @app.route('/api/disconnect', methods=['POST'])
-def disconnect_instrument():
+def disconnect_modbus():
+    """Desconecta el instrumento actual"""
     global instrument
     with modbus_lock:
-        try:
-            if instrument and instrument.serial:
-                instrument.serial.close()
+        if instrument:
+            try:
+                if instrument.serial and instrument.serial.is_open:
+                    instrument.serial.close()
+            except:
+                pass
             instrument = None
-            return jsonify({"status": "success", "message": "Puerto cerrado"})
+    return jsonify({"status": "disconnected"})
+
+
+@app.route('/api/read_register', methods=['GET'])
+def read_register():
+    """Lee un registro Modbus según ID del mapa"""
+    global instrument
+    if not instrument:
+        return jsonify({"error": "Desconectado"}), 400
+
+    reg_id = request.args.get('id')
+    reg_def = REGISTER_MAP.get(reg_id)
+    if not reg_def:
+        return jsonify({"error": "Registro no mapeado"}), 404
+
+    with modbus_lock:
+        try:
+            addr = reg_def['address']
+            fc = reg_def.get('fc', 3)  # por defecto holding register
+            scale = reg_def.get('scale', 1)
+            signed = reg_def.get('signed', False)
+            decimals = reg_def.get('decimals', 0)
+
+            if fc == 3:
+                raw = instrument.read_register(addr, decimals, signed=signed)
+            elif fc == 4:
+                raw = instrument.read_register(addr, decimals, signed=signed, functioncode=4)
+            else:
+                raw = instrument.read_register(addr, decimals, signed=signed)
+
+            value = raw / scale if scale else raw
+            return jsonify({"id": reg_id, "value": value, "raw": raw})
         except Exception as e:
-            return jsonify({"status": "error", "message": str(e)}), 500
+            return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/write', methods=['POST'])
+@app.route('/api/write_register', methods=['POST'])
 def write_register():
     global instrument
-    if not instrument: return jsonify({"error": "Desconectado"}), 400
+    if not instrument:
+        return jsonify({"error": "Desconectado"}), 400
 
     data = request.json
     reg_id = data.get('id')
     user_value = float(data.get('value'))
 
     reg_def = REGISTER_MAP.get(reg_id)
-    if not reg_def: return jsonify({"error": "Registro no mapeado"}), 404
+    if not reg_def:
+        return jsonify({"error": "Registro no mapeado"}), 404
 
     # BLOQUEO: Evita que el polling de la gráfica interrumpa la escritura
     with modbus_lock:
@@ -133,45 +179,60 @@ def write_register():
 def read_batch():
     """Lee una lista de IDs y devuelve sus valores actuales"""
     global instrument
-    if not instrument: return jsonify({"error": "Desconectado"}), 400
+    if not instrument:
+        return jsonify({"error": "Desconectado"}), 400
 
     requested_ids = request.json.get('ids', [])
     results = {}
-    success_count = 0  # Para detectar si el dispositivo está vivo
+    success_count = 0  # Para detectar si algo está respondiendo
 
-    # BLOQUEO: Protegemos la ráfaga de lecturas
     with modbus_lock:
         for reg_id in requested_ids:
             reg_def = REGISTER_MAP.get(reg_id)
-            if reg_def:
-                try:
-                    # Lectura Modbus
-                    raw_val = instrument.read_register(reg_def['address'], 0)
-                    scale = reg_def.get('scale', 1)
-                    real_val = raw_val / scale
-                    results[reg_id] = real_val
-                    success_count += 1
-                except Exception as e:
-                    print(f"Error leyendo {reg_id}: {e}")
-                    results[reg_id] = None
+            if not reg_def:
+                results[reg_id] = {"error": "Registro no mapeado"}
+                continue
 
-    # WATCHDOG: Si intentamos leer algo y NADA respondió, asumimos desconexión física
-    if len(requested_ids) > 0 and success_count == 0:
-        return jsonify({"error": "Device unresponsive"}), 500
+            try:
+                addr = reg_def['address']
+                fc = reg_def.get('fc', 3)
+                scale = reg_def.get('scale', 1)
+                signed = reg_def.get('signed', False)
+                decimals = reg_def.get('decimals', 0)
 
-    return jsonify(results)
+                if fc == 3:
+                    raw = instrument.read_register(addr, decimals, signed=signed)
+                elif fc == 4:
+                    raw = instrument.read_register(addr, decimals, signed=signed, functioncode=4)
+                else:
+                    raw = instrument.read_register(addr, decimals, signed=signed)
+
+                value = raw / scale if scale else raw
+                results[reg_id] = {"value": value, "raw": raw}
+                success_count += 1
+
+            except Exception as e:
+                results[reg_id] = {"error": str(e)}
+
+    return jsonify({"results": results, "success_count": success_count})
 
 
 # -------------------------------------------------------------------------
 # 4. LANZAMIENTO
 # -------------------------------------------------------------------------
 def open_browser():
+    # En servidores (p. ej. Render) no tiene sentido abrir un navegador.
+    if os.environ.get("RENDER") or os.environ.get("RENDER_SERVICE_ID") or os.environ.get("RENDER_EXTERNAL_URL"):
+        return
+
+    # Evita abrir 2 veces cuando Flask recarga en modo debug
     if not os.environ.get("WERKZEUG_RUN_MAIN"):
-        webbrowser.open_new('http://127.0.0.1:5001/')
+        port = int(os.environ.get("PORT", "5001"))
+        webbrowser.open_new(f'http://127.0.0.1:{port}/')
 
 
 if __name__ == "__main__":
-    init_db()
     Timer(1, open_browser).start()
     # threaded=True para manejar peticiones concurrentes, pero modbus_lock controla el puerto
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    port = int(os.environ.get("PORT", "5001"))
+    app.run(host='0.0.0.0', port=port, debug=True)
