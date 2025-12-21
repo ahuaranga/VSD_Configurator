@@ -108,8 +108,11 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: var(--font-main);
 /* NUEVO: Estado Activo (Verde Menta Suave) */
 .btn-active {
 
-    background: #e0f7fa !important; /* Celeste muy suave */
-    border-color: #4dd0e1 !important; /* Borde celeste definido */
+
+
+
+    background: #aadef0 !important; /* Color exacto de la imagen */
+    border-color: #66ccff !important; /* Borde azul oscuro para dar contraste y definición */
 
 
 
