@@ -322,16 +322,19 @@ function toggleMasterCommunication() {
     }
 }
 
+// MODIFICADO: Agrega/Quita clase .btn-active al botón de conexión
 function updateMasterCommButton() {
     const btn = document.getElementById('btn-master-comm');
     if (!btn) return;
     if (isCommActive) {
         btn.classList.remove('comm-btn-off');
         btn.classList.add('comm-btn-on');
+        btn.classList.add('btn-active'); // <--- ACTIVAR COLOR VERDE
         btn.title = "Disconnect";
     } else {
         btn.classList.remove('comm-btn-on');
         btn.classList.add('comm-btn-off');
+        btn.classList.remove('btn-active'); // <--- DESACTIVAR COLOR
         btn.title = "Connect";
     }
 }
@@ -410,9 +413,9 @@ function stopCommunication() {
         setTopLed(false);
         isCommActive = false;
         
-        // REINICIAR DISPLAY FW
+        // REINICIAR DISPLAY FW (CON TEXTO DE RELLENO)
         const fwEl = document.getElementById('fw-display');
-        if(fwEl) fwEl.innerText = "Fw:";
+        if(fwEl) fwEl.innerText = "Fw: --.---";
 
         updateMasterCommButton(); 
         updateChartButtons();
@@ -427,9 +430,9 @@ function handleLostConnection() {
     isCommActive = false;
     setTopLed(false);
     
-    // REINICIAR DISPLAY FW
+    // REINICIAR DISPLAY FW (CON TEXTO DE RELLENO)
     const fwEl = document.getElementById('fw-display');
-    if(fwEl) fwEl.innerText = "Fw:";
+    if(fwEl) fwEl.innerText = "Fw: --.---";
 
     updateMasterCommButton(); 
     updateChartButtons();
@@ -532,6 +535,23 @@ function setTopLed(isConnected) {
 // 5. LÓGICA DE MENÚS Y PANELES
 // =========================================================
 
+// Función para manejar el resaltado visual
+function updateSidebarHighlight(activeType) {
+    // 1. Limpiar todos (Home, Menu, Chart)
+    const homeBtn = document.querySelector('.home-btn');
+    const menuBtn = document.querySelector('.menu-btn');
+    const chartBtn = document.querySelector('.chart-btn');
+
+    if (homeBtn) homeBtn.classList.remove('btn-active');
+    if (menuBtn) menuBtn.classList.remove('btn-active');
+    if (chartBtn) chartBtn.classList.remove('btn-active');
+
+    // 2. Activar el solicitado
+    if (activeType === 'home' && homeBtn) homeBtn.classList.add('btn-active');
+    if (activeType === 'menu' && menuBtn) menuBtn.classList.add('btn-active');
+    if (activeType === 'chart' && chartBtn) chartBtn.classList.add('btn-active');
+}
+
 function toggleMenuSystem() { 
     const chartModule = document.getElementById('view-chart-module');
     const isChartActive = (chartModule.style.display === 'block');
@@ -561,16 +581,26 @@ function toggleMenuSystem() {
             isMenuOpen = true;
             breadcrumb.innerText = "Menu";
         }
+        updateSidebarHighlight('menu'); // Resalta MENU al volver de Chart
     } else {
         isMenuOpen = !isMenuOpen;
-        if (isMenuOpen && currentMainIndex === -1) {
-            breadcrumb.innerText = "Menu";
+        if (isMenuOpen) {
+            if (currentMainIndex === -1) breadcrumb.innerText = "Menu";
+            updateSidebarHighlight('menu'); // Resalta MENU
+        } else {
+            const homeView = document.getElementById('view-home');
+            if (homeView.style.display === 'block') {
+                updateSidebarHighlight('home');
+            } else {
+                updateSidebarHighlight('menu');
+            }
         }
     }
     updateMenuVisibility(); 
 }
 
-function goHome() {
+// Modificado para aceptar flag de inicio
+function goHome(isStartup = false) {
     isMenuOpen = false; 
     currentMainIndex = -1; 
     currentSubIndex = -1;
@@ -580,6 +610,11 @@ function goHome() {
     updateMenuVisibility(); 
     showSection('view-home');
     currentViewRows = [];
+
+    // LÓGICA DE COLOR: Solo si NO es startup
+    if (!isStartup) {
+        updateSidebarHighlight('home');
+    }
 }
 
 function downloadConfig() { alert("Report download functionality in development."); }
@@ -675,6 +710,9 @@ function openChartModule() {
     const btnClear = document.getElementById('btn-clear-vars');
     if (list && btnClear) { btnClear.disabled = (list.children.length === 0); }
     updateChartButtons();
+
+    // NUEVO: Resaltar botón Chart
+    updateSidebarHighlight('chart');
 }
 
 function updateMenuVisibility() {
@@ -808,7 +846,10 @@ function init() {
     });
     setInterval(updateClock, 1000); 
     updateClock(); 
-    goHome();
+    
+    // STARTUP: Llamamos goHome con TRUE para que NO pinte el botón
+    goHome(true); 
+    
     document.getElementById('breadcrumb').innerText = "";
     setTimeout(initDropdownLogic, 100); 
     setTimeout(toggleExtendedFreq, 100); 
@@ -864,7 +905,7 @@ function coreAddVariable(value, text, optionElement) {
         data: [], 
         borderColor: getRandomColor(), 
         borderWidth: 2, 
-        fill: false,
+        fill: false, 
         pointRadius: 0, 
         pointHoverRadius: 5, 
         yAxisID: targetAxis 

@@ -9,7 +9,7 @@
     --active-row-bg: #6cf;          
     --font-main: 'Segoe UI', Tahoma, sans-serif;
     
-    /* CAMBIO: Reducido a 77px para alinear con la mitad del gap lateral */
+    /* HEADER COMPACTO */
     --header-height: 77px; 
     
     --btn-size: 54px;
@@ -48,6 +48,16 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: var(--font-main);
 
 .toolbar-group { display: flex; flex-direction: column; gap: 15px; align-items: center; }
 
+/* Separador Horizontal para la Barra Lateral */
+.sidebar-separator {
+    width: 50%;       
+    height: 2px;      
+    background-color: #bbb; 
+    margin: 5px auto; 
+    flex-shrink: 0;   
+    border-radius: 1px;
+}
+
 /* Layout Derecho (Cabecera + Contenido) */
 .right-layout { flex: 1; display: flex; flex-direction: column; overflow: hidden; width: 100%; }
 
@@ -63,13 +73,13 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: var(--font-main);
     box-shadow: 0 2px 3px rgba(0,0,0,0.05); 
 }
 
-/* GRUPO IZQUIERDO: LOGO + BREADCRUMB (Horizontal) */
+/* GRUPO IZQUIERDO: LOGO + BREADCRUMB */
 .header-left-group { 
     display: flex; 
-    flex-direction: row; /* Lado a lado */
-    align-items: center; /* Centrados verticalmente */
+    flex-direction: row; 
+    align-items: center; 
     justify-content: flex-start; 
-    gap: 20px; /* Espacio generoso antes de la línea */
+    gap: 20px; 
     height: 100%;
     padding-left: 10px;
 }
@@ -95,13 +105,28 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: var(--font-main);
 .hmi-btn:hover { background: #ffffff; border-color: #888; }
 .hmi-btn:active { background: #e0e0e0; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); transform: translateY(1px); }
 
+/* NUEVO: Estado Activo (Verde Menta Suave) */
+.btn-active {
+
+    background: #e0f7fa !important; /* Celeste muy suave */
+    border-color: #4dd0e1 !important; /* Borde celeste definido */
+
+
+
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+
 .text-icon-btn { font-weight: 900; font-size: 20px; color: #1a2d4c; font-family: 'Arial Black', sans-serif; }
 
-/* Botón Configuración (Azul) */
-.config-btn { color: #0d47a1; transition: color 0.3s ease; }
-.config-btn:hover { color: #002171; }
+/* Botón Configuración */
+.config-btn { 
+    color: #1a2d4c; 
+}
+.config-btn:hover {
+     color: #1a2d4c; 
+}
 
-/* Botón Maestro de Comunicación (Toggle SVG) */
+/* Botón Maestro de Comunicación */
 .comm-btn-off .icon-disconnected { display: block; fill: #1a2d4c; }
 .comm-btn-off .icon-connected { display: none; }
 
@@ -112,17 +137,6 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: var(--font-main);
     filter: drop-shadow(0 0 1px rgba(46, 125, 50, 0.4)); 
 }
 
-
-/* Nuevo: Separador Horizontal para la Barra Lateral */
-.sidebar-separator {
-    width: 80%;       /* Ocupa el 50% del ancho de la barra */
-    height: 2px;      /* Grosor de la línea */
-    background-color: #bbb; /* Color gris suave */
-    margin: 5px auto; /* Centrado horizontalmente */
-    flex-shrink: 0;   /* Evita que se aplaste */
-    border-radius: 1px;
-}
-
 /* =========================================
    4. INDICADORES DE ESTADO (TOP BAR)
    ========================================= */
@@ -131,8 +145,6 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: var(--font-main);
     font-size: 16px; 
     color: #333; 
     white-space: nowrap; 
-    
-    /* SEPARADOR VISUAL */
     border-left: 2px solid #ccc; 
     padding-left: 20px; 
     height: 40px; 
@@ -141,8 +153,15 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: var(--font-main);
 }
 
 .status-bar { 
-    font-size: 14px; color: #444; font-weight: bold; white-space: nowrap; 
+    font-size: 16px; color: #444; font-weight: bold; white-space: nowrap; 
     display: flex; align-items: center; gap: 20px; 
+}
+
+/* FIRMWARE FIJO */
+#fw-display {
+    min-width: 105px;
+    display: inline-block;
+    text-align: left;
 }
 
 .conn-indicator { 
@@ -412,11 +431,8 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
 .added-vars-box {
     background-color: #ffffff; 
     border: 1px solid #7a9cc6;
-    
-    /* 320px = 200px (select) + 120px (label) */
     width: 320px; 
-    
-    height: calc(100% - 56px); /* -56px para alinearse con el gráfico */
+    height: calc(100% - 56px); 
     overflow-y: auto; 
     padding: 5px;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); 
