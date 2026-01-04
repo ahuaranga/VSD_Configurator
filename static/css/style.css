@@ -530,37 +530,35 @@ canvas { max-width: 100%; max-height: 100%; }
 
 #btn-export-csv svg { width: 28px; height: 28px; display: block; }
 
-
-
-
-
 /* =========================================
-   10. ESTILOS VISTA OPERATOR
+   10. ESTILOS VISTA OPERATOR (REDISEÑO)
    ========================================= */
-   .operator-layout {
+.operator-layout {
     display: flex;
     gap: 20px;
     height: 100%;
-    align-items: stretch;
+    align-items: flex-start;
+    padding-top: 10px;
 }
 
 .op-left-panel {
-    flex: 1;
+    flex: 0.8; 
     display: flex;
     flex-direction: column;
-    gap: 20px;
 }
 
 .op-right-panel {
-    flex: 1;
-    background: #fff;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    flex: 1.2; 
+    background: #fdfdfd;
+    border: 1px solid #bbb;
+    border-radius: 6px;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    position: relative;
+    justify-content: flex-start;
+    gap: 20px;
     padding: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
 /* Grilla de Parámetros */
@@ -568,128 +566,185 @@ canvas { max-width: 100%; max-height: 100%; }
     background: #e8e8e8;
     border: 1px solid #999;
     border-radius: 5px;
-    padding: 10px;
+    padding: 15px;
+    height: auto;
 }
 
 .grid-header {
     font-weight: bold;
-    color: #444;
-    margin-bottom: 10px;
-    border-bottom: 1px solid #ccc;
-    padding-bottom: 5px;
+    color: #333;
+    font-size: 16px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 8px;
 }
 
 .live-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 15px;
+    gap: 20px;
 }
 
 .grid-item {
     background: #fff;
-    padding: 10px;
-    border-radius: 4px;
+    padding: 20px 10px;
+    border-radius: 6px;
     border: 1px solid #ccc;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .grid-label {
-    font-size: 13px;
+    font-size: 14px;
     color: #666;
     font-weight: bold;
+    margin-bottom: 5px;
 }
 
 .grid-value {
-    font-size: 24px;
-    font-weight: bold;
+    font-size: 28px;
+    font-weight: 900;
     color: #1a2d4c;
 }
 
-/* Botones de Control */
-.op-controls {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-    margin-top: 20px;
-}
-
-.btn-op {
-    flex: 1;
-    height: 60px;
-    font-size: 18px;
-    font-weight: 900;
-    border: 2px solid rgba(0,0,0,0.2);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: transform 0.1s, opacity 0.2s;
-    color: white;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-}
-
-.btn-op:active { transform: translateY(2px); }
-.btn-op:hover { opacity: 0.9; }
-
-.btn-start {
-    background: linear-gradient(to bottom, #4cd137, #44bd32);
-    box-shadow: 0 4px 0 #2e8c24;
-}
-
-.btn-stop {
-    background: linear-gradient(to bottom, #e84118, #c23616);
-    box-shadow: 0 4px 0 #8c270d;
-}
-
-/* Gauge */
+/* Gauge con Altura Fija y Layout Corregido */
 .gauge-container {
     width: 100%;
-    max-width: 400px;
+    max-width: 380px;
+    height: 280px; /* Altura fija aumentada ligeramente */
     position: relative;
     text-align: center;
+    margin-bottom: 10px;
+    /* Usamos Flex en columna para apilar canvas y etiqueta */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
+/* Asegurar que el canvas deje espacio para la etiqueta */
+.gauge-container canvas {
+    max-height: 240px !important;
+    width: auto !important;
+}
+
+/* El número central permanece absoluto sobre el canvas */
 .gauge-value-display {
     position: absolute;
-    top: 65%;
+    top: 55%; 
     left: 50%;
     transform: translate(-50%, -50%);
     display: flex;
     flex-direction: column;
+    z-index: 10;
 }
 
-.gauge-number {
-    font-size: 48px;
+.gauge-number { font-size: 52px; font-weight: bold; color: #222; line-height: 1; letter-spacing: -1px; }
+.gauge-unit { font-size: 18px; color: #777; font-weight: 600; }
+
+/* La etiqueta ahora es parte del flujo normal debajo del canvas */
+.gauge-label { 
+    margin-top: 5px;
+    width: 100%;
+    font-size: 20px; 
+    font-weight: bold; 
+    color: #444; 
+}
+
+/* Target Speed Input */
+.target-speed-box {
+    width: 100%;
+    max-width: 350px;
+    padding: 10px;
+    background-color: #f0f0f0; 
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.input-blue-style {
+    background: linear-gradient(to bottom, #eef6fa, #dceefc);
+    border: 1px solid #7a9cc6;
+    color: #1a2d4c;
     font-weight: bold;
-    color: #333;
-    line-height: 1;
-}
-
-.gauge-unit {
     font-size: 16px;
-    color: #666;
+    text-align: right;
+    padding: 5px 8px;
+    border-radius: 4px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+    width: 100px;
+}
+.input-blue-style:focus {
+    border-color: #2b65bd;
+    box-shadow: 0 0 5px rgba(43, 101, 189, 0.3);
 }
 
-.gauge-label {
-    margin-top: -20px;
-    font-size: 20px;
-    font-weight: bold;
-    color: #444;
+/* Botones de Control (Pastel y Altura Ajustada) */
+.op-controls {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    max-width: 350px;
 }
 
+.btn-op {
+    flex: 1;
+    height: 50px; /* Altura reducida para coincidir con el input box */
+    font-size: 18px;
+    font-family: 'Segoe UI', sans-serif;
+    font-weight: 700;
+    border: 1px solid transparent; /* Borde sutil */
+    border-radius: 8px;
+    cursor: pointer;
+    /* Color de texto oscuro para contraste con pastel */
+    color: #444; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Sombra más suave */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
 
+.btn-icon { font-size: 22px; }
 
+/* Botón START Pastel Verde */
+.btn-start {
+    background-color: #c8e6c9; /* Verde pastel */
+    border-color: #a5d6a7;
+    color: #2e7d32; /* Texto verde oscuro */
+}
+.btn-start:hover { 
+    background-color: #a5d6a7; /* Un poco más oscuro al pasar el mouse */
+    transform: translateY(-1px); 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+}
+.btn-start:active { 
+    background-color: #81c784; 
+    transform: translateY(1px); 
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); 
+}
 
-
-
-
-
-
-
-
-
-
-
+/* Botón STOP Pastel Rojo */
+.btn-stop {
+    background-color: #ffcdd2; /* Rojo pastel */
+    border-color: #ef9a9a;
+    color: #c62828; /* Texto rojo oscuro */
+}
+.btn-stop:hover { 
+    background-color: #ef9a9a;
+    transform: translateY(-1px); 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+}
+.btn-stop:active { 
+    background-color: #e57373; 
+    transform: translateY(1px); 
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); 
+}
 
 /* RESPONSIVE */
 @media (max-width: 1024px) { 

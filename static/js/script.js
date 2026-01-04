@@ -9,10 +9,11 @@ const TAG_MAP = {
     // GRUPO 2: MONITORIZACIÓN VSD
     'vsd_supply_voltage': 'vsd_supply_voltage',
     'vsd_temperature': 'vsd_temperature',
-    'vsd_load': 'vsd_current', // Simulamos carga con corriente por ahora (o usa registro real si existe)
+    'vsd_load': 'vsd_current', 
 
     // GRUPO 3: VARIABLE SPEED DRIVE (VSD)
     'vsd_motor_rpm': 'vsd_motor_rpm',
+    'vsd_target_freq': 'vsd_target_freq', // NUEVO REGISTRO
     'vsd_frequency_out': 'vsd_frequency_out',
     'vsd_current': 'vsd_current',
     'vsd_motor_current': 'vsd_motor_current',
@@ -41,6 +42,7 @@ const UNIT_MAP = {
     
     // UNIDADES VSD
     'vsd_motor_rpm': 'RPM',
+    'vsd_target_freq': 'Hz', // Unidad para target freq
     'vsd_frequency_out': 'Hz',
     'vsd_current': 'A',
     'vsd_motor_current': 'A',
@@ -73,17 +75,14 @@ const DEFAULT_AXIS_MAP = {
 // 1. CONFIGURACIÓN Y ESTADO GLOBAL
 // =========================================================
 let savedConfig = {
-    connection_type: 'serial', // 'serial' o 'tcp'
-    // Serial Params
+    connection_type: 'serial',
     port: null,
     baudrate: 19200,
     bytesize: 8,
     parity: 'N',
     stopbits: 1,
-    // TCP Params
     ip_address: '',
     tcp_port: 502,
-    // Common
     timeout: 1
 };
 
@@ -283,21 +282,17 @@ function openConfigModal() {
     document.getElementById('config-modal').style.display = 'flex';
     
     // Restaurar valores guardados
-    // 1. Tipo de conexión
     const radios = document.getElementsByName('connType');
     radios.forEach(r => {
         if(r.value === savedConfig.connection_type) r.checked = true;
     });
     toggleConfigFields();
 
-    // 2. Valores TCP
     document.getElementById('tcp-ip').value = savedConfig.ip_address;
     document.getElementById('tcp-port').value = savedConfig.tcp_port;
     document.getElementById('serial-timeout').value = savedConfig.timeout;
 
-    // 3. Puertos Serial (Cargar lista)
     const portSelect = document.getElementById('serial-port');
-    // Solo recargar puertos si no estamos conectados para evitar parpadeos innecesarios
     if (!isCommActive) {
         portSelect.innerHTML = '<option value="" disabled selected>Searching...</option>';
         fetch('/api/ports')
@@ -320,9 +315,8 @@ function openConfigModal() {
             .catch(() => { portSelect.innerHTML = '<option>Error loading ports</option>'; });
     }
 
-    // --- BLOQUEO DE EDICIÓN SI ESTÁ CONECTADO ---
     const allInputs = document.querySelectorAll('#config-modal input, #config-modal select');
-    const applyBtn = document.querySelector('#config-modal .modal-btn:first-child'); // Botón Apply
+    const applyBtn = document.querySelector('#config-modal .modal-btn:first-child'); 
     
     if (isCommActive) {
         allInputs.forEach(el => el.disabled = true);
@@ -363,7 +357,6 @@ function closeConfigModal() { document.getElementById('config-modal').style.disp
 function readConfigFromDOM() {
     if (isCommActive) return false;
 
-    // Leer tipo conexión
     const radios = document.getElementsByName('connType');
     let connType = 'serial';
     radios.forEach(r => { if(r.checked) connType = r.value; });
@@ -379,7 +372,6 @@ function readConfigFromDOM() {
         savedConfig.parity = document.getElementById('serial-parity').value;
         savedConfig.stopbits = document.getElementById('serial-stopbits').value;
     } else {
-        // TCP
         const ip = document.getElementById('tcp-ip').value;
         const port = document.getElementById('tcp-port').value;
         if (!ip) { alert("Please enter a valid IP Address."); return false; }
@@ -460,10 +452,7 @@ function startCommunication() {
             updateMasterCommButton(); 
             startPolling();
             updateChartButtons();
-            
-            // LEER FIRMWARE AL CONECTAR
             readFirmwareVersion();
-
             setTimeout(() => { statusModal.style.display = 'none'; }, 800);
         } else {
             progressBar.style.backgroundColor = '#c62828';
@@ -500,7 +489,6 @@ function stopCommunication() {
         setTopLed(false);
         isCommActive = false;
         
-        // REINICIAR DISPLAY FW (CON TEXTO DE RELLENO)
         const fwEl = document.getElementById('fw-display');
         if(fwEl) fwEl.innerText = "Fw: --.---";
 
@@ -517,7 +505,6 @@ function handleLostConnection() {
     isCommActive = false;
     setTopLed(false);
     
-    // REINICIAR DISPLAY FW (CON TEXTO DE RELLENO)
     const fwEl = document.getElementById('fw-display');
     if(fwEl) fwEl.innerText = "Fw: --.---";
 
@@ -527,7 +514,6 @@ function handleLostConnection() {
     alert("ERROR: Lost connection with device.\nCheck cable or network.");
 }
 
-// LEER FIRMWARE
 function readFirmwareVersion() {
     fetch('/api/read_batch', {
         method: 'POST',
@@ -542,7 +528,6 @@ function readFirmwareVersion() {
         const el = document.getElementById('fw-display');
         if (el) {
             if (ver !== null && rel !== null && ver !== undefined && rel !== undefined) {
-                // LÓGICA DE CONVERSIÓN HEX
                 let hexVer = ver.toString(16);
                 if (hexVer.length > 1) {
                     hexVer = hexVer.charAt(0) + '.' + hexVer.slice(1);
@@ -577,6 +562,16 @@ function pollActiveView() {
             mapIdToSuffix[modbusID] = suffix;
         }
     }
+
+    // --- AGREGADO: Si estamos en Operator, leer vsd_target_freq también ---
+    if (document.getElementById('view-operator').style.display === 'block') {
+        const targetFreqId = TAG_MAP['vsd_target_freq'];
+        if (targetFreqId && !idsToRead.includes(targetFreqId)) {
+            idsToRead.push(targetFreqId);
+            mapIdToSuffix[targetFreqId] = 'vsd_target_freq';
+        }
+    }
+
     if (idsToRead.length === 0) return;
     fetch('/api/read_batch', {
         method: 'POST',
@@ -595,6 +590,14 @@ function pollActiveView() {
                 // --- ACTUALIZAR GAUGE EN VISTA OPERATOR ---
                 if (suffix === 'vsd_frequency_out' && document.getElementById('view-operator').style.display === 'block') {
                     updateOperatorGauge(value);
+                }
+
+                // --- ACTUALIZAR INPUT DE TARGET SPEED (si no tiene foco) ---
+                if (suffix === 'vsd_target_freq' && document.getElementById('view-operator').style.display === 'block') {
+                    const inputEl = document.getElementById('op-target-speed-input');
+                    if (document.activeElement !== inputEl) {
+                        inputEl.value = value;
+                    }
                 }
             }
         }
@@ -812,7 +815,7 @@ function showSection(sectionId) {
 function loadView(viewName) {
     let targetId = 'view-default';
     switch(viewName) {
-        case 'Operator': targetId = 'view-operator'; setTimeout(initOperatorGauge, 200); break;
+        case 'Operator': targetId = 'view-operator'; setTimeout(initOperatorGauge, 50); break;
         case 'Speed': targetId = 'view-speed'; break;
         case 'Configure': targetId = 'view-configure'; break;
         case 'Time': targetId = 'view-time'; break;
@@ -1257,7 +1260,7 @@ function initOperatorGauge() {
 
     if (operatorChart) operatorChart.destroy();
 
-    // ESTILO "HERRADURA" / ROUNDED DOUGHNUT
+    // ESTILO "HERRADURA" / ROUNDED DOUGHNUT (Cian/Teal)
     operatorChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -1265,8 +1268,8 @@ function initOperatorGauge() {
             datasets: [{
                 data: [0, 60], // Valor inicial, Maximo (60Hz)
                 backgroundColor: [
-                    '#26c6da', // Cyan/Teal (Color activo)
-                    '#eceff1'  // Gris claro (Fondo de pista)
+                    '#eceff1', // CAMBIO: Gris para el valor activo (oculto)
+                    '#eceff1'  // Gris para el fondo
                 ],
                 borderWidth: 0,
                 borderRadius: 20, // Bordes redondeados en las puntas
@@ -1282,10 +1285,7 @@ function initOperatorGauge() {
                 tooltip: { enabled: false }, // Sin tooltips
                 legend: { display: false }   // Sin leyenda
             },
-            animation: {
-                animateScale: true,
-                animateRotate: true
-            }
+            animation: false // <--- ANIMACIÓN DESACTIVADA PARA EVITAR "GLITCH"
         }
     });
 }
@@ -1309,18 +1309,53 @@ function updateOperatorGauge(value) {
     operatorChart.update('none'); 
 }
 
+// NUEVO: Función para escribir la velocidad target desde el panel de operador
+function writeTargetSpeed() {
+    if (!isCommActive) {
+        alert("Please connect first.");
+        return;
+    }
+    
+    const inputEl = document.getElementById('op-target-speed-input');
+    const newVal = parseFloat(inputEl.value);
+    
+    if (isNaN(newVal) || newVal < 0) {
+        alert("Invalid speed value");
+        return;
+    }
+
+    // USAMOS EL NUEVO REGISTRO 'vsd_target_freq' (Dirección 855)
+    fetch('/api/write', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ id: 'vsd_target_freq', value: newVal })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.status === 'success') {
+            console.log("Target speed updated:", newVal);
+            // Feedback visual breve
+            inputEl.style.backgroundColor = "#dcedc8"; // Verde claro momentáneo
+            setTimeout(() => inputEl.style.backgroundColor = "", 500);
+        } else {
+            alert("Error writing speed: " + data.error);
+        }
+    })
+    .catch(err => alert("Comm Error: " + err));
+}
+
 function startVSD() {
     if (!isCommActive) return alert("System disconnected. Please connect first.");
     if (confirm("Are you sure you want to START the VSD?")) {
         console.log("Sending START command...");
-        // AQUÍ CONECTARÁS TU API:
-        // fetch('/api/write', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: 'vsd_control', value: 1 }) })
+        // AQUÍ CONECTARÁS TU API PARA ENVIAR EL COMANDO REAL:
+        // fetch('/api/write', { method: 'POST', ... body: { id: 'vsd_control', value: 1 } })
     }
 }
 
 function stopVSD() {
     if (!isCommActive) return alert("System disconnected.");
     console.log("Sending STOP command...");
-    // AQUÍ CONECTARÁS TU API:
-    // fetch('/api/write', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: 'vsd_control', value: 0 }) })
+    // AQUÍ CONECTARÁS TU API PARA ENVIAR EL COMANDO REAL:
+    // fetch('/api/write', { method: 'POST', ... body: { id: 'vsd_control', value: 0 } })
 }

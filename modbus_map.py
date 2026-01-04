@@ -73,33 +73,63 @@ REGISTER_MAP = {
         "unit": "RPM",
         "access": "rw"
     },
+    
+    # --- NUEVOS REGISTROS (Offset 855+) ---
+    "vsd_target_freq": {
+        "address": 855, 
+        "type": "uint", 
+        "scale": 100,  # x100 (Ej: 6000 -> 60.00 Hz)
+        "unit": "Hz", 
+        "access": "rw"
+    },
+    "vsd_min_speed": {
+        "address": 856, "type": "uint", "scale": 100, "unit": "Hz", "access": "rw"
+    },
+    "vsd_max_speed": {
+        "address": 857, "type": "uint", "scale": 100, "unit": "Hz", "access": "rw"
+    },
+    "vsd_carrier_freq": {
+        "address": 862, "type": "uint", "scale": 10, "unit": "kHz", "access": "rw"
+    },
+    "vsd_base_freq": {
+        "address": 863, "type": "uint", "scale": 100, "unit": "Hz", "access": "rw"
+    },
+    "vsd_base_volts": {
+        "address": 864, "type": "uint", "scale": 1, "unit": "V", "access": "rw"
+    },
+    "vsd_startup_freq": {
+        "address": 865, "type": "uint", "scale": 100, "unit": "Hz", "access": "rw"
+    },
+    "vsd_voltage_boost": {
+        "address": 869, "type": "uint", "scale": 10, "unit": "%", "access": "rw"
+    },
+    # ---------------------------------------------------
+
     "vsd_frequency_out": {
         "address": 2165,
         "type": "uint",
-        "scale": 100,  # x100 (Ej: 60.00 Hz)
+        "scale": 100,
         "unit": "Hz",
         "access": "ro"
     },
-    # --- NUEVOS REGISTROS AGREGADOS (VOLTAJES) ---
     "vsd_volts_in": {
         "address": 2169, 
         "type": "uint", 
-        "scale": 10,   # x10 (Ej: 480.0 V)
+        "scale": 10,
         "unit": "V", 
         "access": "ro"
     },
     "vsd_volts_out": {
         "address": 2170, 
         "type": "uint", 
-        "scale": 10,   # x10 (Ej: 460.0 V)
+        "scale": 10,
         "unit": "V", 
         "access": "ro"
     },
-    # ---------------------------------------------
     "vsd_current": {
         "address": 2174,
         "type": "uint",
-        "scale": 10,   # x10 (Ej: 10.5 A)
+        "scale": 10,
         "unit": "A",
         "access": "ro"
     },

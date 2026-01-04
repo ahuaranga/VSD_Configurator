@@ -133,14 +133,10 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="op-controls">
-                                <button class="btn-op btn-start" onclick="startVSD()">START</button>
-                                <button class="btn-op btn-stop" onclick="stopVSD()">STOP</button>
-                            </div>
                         </div>
 
                         <div class="op-right-panel">
+                            
                             <div class="gauge-container">
                                 <canvas id="operatorGauge"></canvas>
                                 <div class="gauge-value-display">
@@ -149,17 +145,26 @@
                                 </div>
                                 <div class="gauge-label">VSD Frequency</div>
                             </div>
+
+                            <div class="target-speed-box">
+                                <div class="form-row" style="margin-bottom: 0;">
+                                    <label for="op-target-speed-input">VSD Target Speed:</label>
+                                    <input id="op-target-speed-input" type="number" value="0" class="input-blue-style" onchange="writeTargetSpeed()">
+                                </div>
+                            </div>
+
+                            <div class="op-controls">
+                                <button class="btn-op btn-start" onclick="startVSD()">
+                                    <span class="btn-icon">▶</span> START
+                                </button>
+                                <button class="btn-op btn-stop" onclick="stopVSD()">
+                                    <span class="btn-icon">■</span> STOP
+                                </button>
+                            </div>
+
                         </div>
                     </div>
                 </div>
-
-
-
-
-
-
-
-
 
                 <div id="view-default" class="view-section" style="display: none;">
                     <h2 id="default-title">Option</h2><div class="content-placeholder">Panel under construction</div>
