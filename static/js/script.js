@@ -1344,18 +1344,50 @@ function writeTargetSpeed() {
     .catch(err => alert("Comm Error: " + err));
 }
 
+
+
 function startVSD() {
     if (!isCommActive) return alert("System disconnected. Please connect first.");
+    
     if (confirm("Are you sure you want to START the VSD?")) {
         console.log("Sending START command...");
-        // AQUÍ CONECTARÁS TU API PARA ENVIAR EL COMANDO REAL:
-        // fetch('/api/write', { method: 'POST', ... body: { id: 'vsd_control', value: 1 } })
+        
+        // Enviamos un 1 al registro vsd_remote_start (Offset 2)
+        fetch('/api/write', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ id: 'vsd_remote_start', value: 1 })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if(data.status === 'success') {
+                alert("Start command sent successfully.");
+            } else {
+                alert("Error sending start command: " + data.error);
+            }
+        })
+        .catch(err => alert("Communication Error: " + err));
     }
 }
 
 function stopVSD() {
     if (!isCommActive) return alert("System disconnected.");
+    
     console.log("Sending STOP command...");
-    // AQUÍ CONECTARÁS TU API PARA ENVIAR EL COMANDO REAL:
-    // fetch('/api/write', { method: 'POST', ... body: { id: 'vsd_control', value: 0 } })
+    
+    // Enviamos un 1 al registro vsd_remote_stop (Offset 0)
+    fetch('/api/write', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ id: 'vsd_remote_stop', value: 1 })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.status === 'success') {
+            alert("Stop command sent successfully.");
+        } else {
+            alert("Error sending stop command: " + data.error);
+        }
+    })
+    .catch(err => alert("Communication Error: " + err));
 }
