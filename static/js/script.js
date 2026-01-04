@@ -293,28 +293,55 @@ function openConfigModal() {
     document.getElementById('tcp-port').value = savedConfig.tcp_port;
     document.getElementById('serial-timeout').value = savedConfig.timeout;
 
-    // 3. Puertos Serial
+    // 3. Puertos Serial (Cargar lista)
     const portSelect = document.getElementById('serial-port');
-    portSelect.innerHTML = '<option value="" disabled selected>Searching...</option>';
-    fetch('/api/ports')
-        .then(response => response.json())
-        .then(data => {
-            portSelect.innerHTML = '';
-            if (data.length === 0) {
-                portSelect.add(new Option("No ports detected", "", true, true));
-                // Solo deshabilitar si estamos en modo serial
-                if(savedConfig.connection_type === 'serial') portSelect.disabled = true;
-            } else {
-                portSelect.disabled = false;
-                data.forEach(port => {
-                    let opt = new Option(`${port.device} - ${port.description}`, port.device);
-                    if (savedConfig.port === port.device) opt.selected = true;
-                    portSelect.add(opt);
-                });
-                if (!savedConfig.port && data.length > 0) portSelect.selectedIndex = 0;
-            }
-        })
-        .catch(() => { portSelect.innerHTML = '<option>Error loading ports</option>'; });
+    // Solo recargar puertos si no estamos conectados para evitar parpadeos innecesarios
+    // o para actualizar la lista si se desconectó algo.
+    // Sin embargo, si estamos conectados (BLOQUEADO), no tiene sentido buscar puertos.
+    
+    if (!isCommActive) {
+        portSelect.innerHTML = '<option value="" disabled selected>Searching...</option>';
+        fetch('/api/ports')
+            .then(response => response.json())
+            .then(data => {
+                portSelect.innerHTML = '';
+                if (data.length === 0) {
+                    portSelect.add(new Option("No ports detected", "", true, true));
+                    if(savedConfig.connection_type === 'serial') portSelect.disabled = true;
+                } else {
+                    portSelect.disabled = false;
+                    data.forEach(port => {
+                        let opt = new Option(`${port.device} - ${port.description}`, port.device);
+                        if (savedConfig.port === port.device) opt.selected = true;
+                        portSelect.add(opt);
+                    });
+                    if (!savedConfig.port && data.length > 0) portSelect.selectedIndex = 0;
+                }
+            })
+            .catch(() => { portSelect.innerHTML = '<option>Error loading ports</option>'; });
+    }
+
+    // --- NUEVO: BLOQUEO DE EDICIÓN SI ESTÁ CONECTADO ---
+    const allInputs = document.querySelectorAll('#config-modal input, #config-modal select');
+    const applyBtn = document.querySelector('#config-modal .modal-btn:first-child'); // Botón Apply
+    
+    if (isCommActive) {
+        // Deshabilitar todo
+        allInputs.forEach(el => el.disabled = true);
+        if(applyBtn) {
+            applyBtn.disabled = true;
+            applyBtn.style.opacity = "0.5";
+            applyBtn.title = "Disconnect first to change settings";
+        }
+    } else {
+        // Habilitar todo (excepto portSelect si estaba cargando, pero el fetch lo maneja)
+        allInputs.forEach(el => el.disabled = false);
+        if(applyBtn) {
+            applyBtn.disabled = false;
+            applyBtn.style.opacity = "1";
+            applyBtn.title = "";
+        }
+    }
 }
 
 function toggleConfigFields() {
@@ -337,6 +364,9 @@ function toggleConfigFields() {
 function closeConfigModal() { document.getElementById('config-modal').style.display = 'none'; }
 
 function readConfigFromDOM() {
+    // Si está conectado, no deberíamos leer nada, pero por seguridad:
+    if (isCommActive) return false;
+
     // Leer tipo conexión
     const radios = document.getElementsByName('connType');
     let connType = 'serial';
