@@ -7,17 +7,17 @@ Estructura: Clave de variable -> {dirección, tipo, escala, unidad, acceso}
 
 REGISTER_MAP = {
     # ==========================================
-    # GRUPO 0: CONTROL REMOTO (Nuevos comandos)
+    # GRUPO 0: CONTROL REMOTO (Comandos)
     # ==========================================
     "vsd_remote_stop": {
-        "address": 0,    # Offset 0 según tabla
+        "address": 0,    # Offset 0
         "type": "uint",
         "scale": 1,
         "unit": "",
         "access": "rw"
     },
     "vsd_remote_start": {
-        "address": 2,    # Offset 2 según tabla
+        "address": 2,    # Offset 2
         "type": "uint",
         "scale": 1,
         "unit": "",
@@ -119,7 +119,7 @@ REGISTER_MAP = {
     "vsd_target_freq": {
         "address": 855, 
         "type": "uint", 
-        "scale": 100,  # x100 (60.00 Hz = 6000)
+        "scale": 100, 
         "unit": "Hz", 
         "access": "rw"
     },

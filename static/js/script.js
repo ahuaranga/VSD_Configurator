@@ -13,8 +13,10 @@ const TAG_MAP = {
 
     // GRUPO 3: VARIABLE SPEED DRIVE (VSD)
     'vsd_motor_rpm': 'vsd_motor_rpm',
-    'vsd_target_freq': 'vsd_target_freq', // NUEVO REGISTRO
+    'vsd_target_freq': 'vsd_target_freq', 
     'vsd_frequency_out': 'vsd_frequency_out',
+    'vsd_min_speed': 'vsd_min_speed', // NUEVO: Límite Mínimo
+    'vsd_max_speed': 'vsd_max_speed', // NUEVO: Límite Máximo
     'vsd_current': 'vsd_current',
     'vsd_motor_current': 'vsd_motor_current',
     'vsd_volts_in': 'vsd_volts_in',
@@ -42,8 +44,10 @@ const UNIT_MAP = {
     
     // UNIDADES VSD
     'vsd_motor_rpm': 'RPM',
-    'vsd_target_freq': 'Hz', // Unidad para target freq
+    'vsd_target_freq': 'Hz',
     'vsd_frequency_out': 'Hz',
+    'vsd_min_speed': 'Hz',
+    'vsd_max_speed': 'Hz',
     'vsd_current': 'A',
     'vsd_motor_current': 'A',
     'vsd_volts_in': 'V',
@@ -563,13 +567,16 @@ function pollActiveView() {
         }
     }
 
-    // --- AGREGADO: Si estamos en Operator, leer vsd_target_freq también ---
+    // --- AGREGADO: Si estamos en Operator, forzamos lectura de Target, Min y Max ---
     if (document.getElementById('view-operator').style.display === 'block') {
-        const targetFreqId = TAG_MAP['vsd_target_freq'];
-        if (targetFreqId && !idsToRead.includes(targetFreqId)) {
-            idsToRead.push(targetFreqId);
-            mapIdToSuffix[targetFreqId] = 'vsd_target_freq';
-        }
+        const extraTags = ['vsd_target_freq', 'vsd_min_speed', 'vsd_max_speed'];
+        extraTags.forEach(tag => {
+             const mid = TAG_MAP[tag];
+             if (mid && !idsToRead.includes(mid)) {
+                 idsToRead.push(mid);
+                 mapIdToSuffix[mid] = tag;
+             }
+        });
     }
 
     if (idsToRead.length === 0) return;
@@ -587,11 +594,6 @@ function pollActiveView() {
                 const el = document.getElementById('val-' + suffix);
                 if (el) el.innerText = value;
 
-                // --- ACTUALIZAR GAUGE EN VISTA OPERATOR ---
-                if (suffix === 'vsd_frequency_out' && document.getElementById('view-operator').style.display === 'block') {
-                    updateOperatorGauge(value);
-                }
-
                 // --- ACTUALIZAR INPUT DE TARGET SPEED (si no tiene foco) ---
                 if (suffix === 'vsd_target_freq' && document.getElementById('view-operator').style.display === 'block') {
                     const inputEl = document.getElementById('op-target-speed-input');
@@ -599,6 +601,20 @@ function pollActiveView() {
                         inputEl.value = value;
                     }
                 }
+            }
+        }
+
+        // --- CALCULO PROPORCIONAL PARA EL GAUGE EN VISTA OPERATOR ---
+        if (document.getElementById('view-operator').style.display === 'block') {
+            const freq = data[TAG_MAP['vsd_frequency_out']];
+            const min = data[TAG_MAP['vsd_min_speed']];
+            const max = data[TAG_MAP['vsd_max_speed']];
+
+            // Solo actualizamos si tenemos los 3 valores necesarios
+            if (freq !== undefined && freq !== null && 
+                min !== undefined && min !== null && 
+                max !== undefined && max !== null) {
+                 updateOperatorGauge(freq, min, max);
             }
         }
     })
@@ -1264,12 +1280,13 @@ function initOperatorGauge() {
     operatorChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: ['Frequency', 'Remaining'],
+            // El dataset representa porcentajes [Progreso, Restante]
+            labels: ['Progress', 'Remaining'],
             datasets: [{
-                data: [0, 60], // Valor inicial, Maximo (60Hz)
+                data: [0, 100], // Inicializado en 0%
                 backgroundColor: [
-                    '#eceff1', // CAMBIO: Gris para el valor activo (oculto)
-                    '#eceff1'  // Gris para el fondo
+                    '#6cf',    // Azul cian para el progreso
+                    '#eceff1'  // Gris claro para el fondo
                 ],
                 borderWidth: 0,
                 borderRadius: 20, // Bordes redondeados en las puntas
@@ -1290,20 +1307,33 @@ function initOperatorGauge() {
     });
 }
 
-function updateOperatorGauge(value) {
+/**
+ * Actualiza el gráfico del operador basándose en límites dinámicos.
+ * Fórmula: Progreso = (Actual - Min) / (Max - Min)
+ * @param {number} current Frecuencia actual
+ * @param {number} min Velocidad mínima configurada
+ * @param {number} max Velocidad máxima configurada
+ */
+function updateOperatorGauge(current, min, max) {
     if (!operatorChart) return;
     
-    // Asumimos 60Hz como máximo para el gráfico
-    const maxFreq = 60; 
-    let val = parseFloat(value);
-    if (isNaN(val)) val = 0;
-    
-    // Clampear valor entre 0 y max
-    if (val < 0) val = 0;
-    if (val > maxFreq) val = maxFreq;
+    let curVal = parseFloat(current) || 0;
+    let minVal = parseFloat(min) || 0;
+    let maxVal = parseFloat(max) || 60; // Fallback por seguridad
 
-    // Actualizar datos del gráfico [Valor, Restante]
-    operatorChart.data.datasets[0].data = [val, maxFreq - val];
+    // Evitar división por cero
+    let range = maxVal - minVal;
+    let percentage = 0;
+
+    if (range > 0) {
+        percentage = ((curVal - minVal) / range) * 100;
+    }
+    
+    // Clampear entre 0% y 100% para visualización
+    percentage = Math.max(0, Math.min(100, percentage));
+
+    // Actualizar datos del gráfico [Porcentaje, Restante]
+    operatorChart.data.datasets[0].data = [percentage, 100 - percentage];
     
     // Actualizar sin animación completa para suavidad
     operatorChart.update('none'); 
@@ -1343,8 +1373,6 @@ function writeTargetSpeed() {
     })
     .catch(err => alert("Comm Error: " + err));
 }
-
-
 
 function startVSD() {
     if (!isCommActive) return alert("System disconnected. Please connect first.");

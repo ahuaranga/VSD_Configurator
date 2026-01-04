@@ -103,7 +103,7 @@ class VSDInstrument:
             return self.serial_inst.read_register(address, decimals, functioncode=3, signed=False)
         
         elif self.mode == 'tcp':
-            # CORRECCIÓN: Usamos 'device_id' en lugar de 'slave'
+            # CORRECCIÓN: Usamos 'device_id' en lugar de 'slave' para PyModbus 3.x
             rr = self.tcp_client.read_holding_registers(address=address, count=1, device_id=self.slave_id)
             if rr.isError():
                 raise Exception(f"Error de lectura Modbus TCP: {rr}")
@@ -121,7 +121,7 @@ class VSDInstrument:
             raw_val = int(value * (10 ** decimals))
             raw_val = raw_val & 0xFFFF
             
-            # CORRECCIÓN: Usamos 'device_id' en lugar de 'slave'
+            # CORRECCIÓN: Usamos 'device_id' en lugar de 'slave' para PyModbus 3.x
             wr = self.tcp_client.write_register(address=address, value=raw_val, device_id=self.slave_id)
             if wr.isError():
                 raise Exception(f"Error de escritura Modbus TCP: {wr}")
