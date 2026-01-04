@@ -9,6 +9,7 @@ const TAG_MAP = {
     // GRUPO 2: MONITORIZACIÓN VSD
     'vsd_supply_voltage': 'vsd_supply_voltage',
     'vsd_temperature': 'vsd_temperature',
+    'vsd_load': 'vsd_current', // Simulamos carga con corriente por ahora (o usa registro real si existe)
 
     // GRUPO 3: VARIABLE SPEED DRIVE (VSD)
     'vsd_motor_rpm': 'vsd_motor_rpm',
@@ -36,6 +37,7 @@ const UNIT_MAP = {
     'vsd_temperature': '°C',
     'overcurrent': 'A',
     'undercurrent': 'A',
+    'vsd_load': '%',
     
     // UNIDADES VSD
     'vsd_motor_rpm': 'RPM',
@@ -296,9 +298,6 @@ function openConfigModal() {
     // 3. Puertos Serial (Cargar lista)
     const portSelect = document.getElementById('serial-port');
     // Solo recargar puertos si no estamos conectados para evitar parpadeos innecesarios
-    // o para actualizar la lista si se desconectó algo.
-    // Sin embargo, si estamos conectados (BLOQUEADO), no tiene sentido buscar puertos.
-    
     if (!isCommActive) {
         portSelect.innerHTML = '<option value="" disabled selected>Searching...</option>';
         fetch('/api/ports')
@@ -321,12 +320,11 @@ function openConfigModal() {
             .catch(() => { portSelect.innerHTML = '<option>Error loading ports</option>'; });
     }
 
-    // --- NUEVO: BLOQUEO DE EDICIÓN SI ESTÁ CONECTADO ---
+    // --- BLOQUEO DE EDICIÓN SI ESTÁ CONECTADO ---
     const allInputs = document.querySelectorAll('#config-modal input, #config-modal select');
     const applyBtn = document.querySelector('#config-modal .modal-btn:first-child'); // Botón Apply
     
     if (isCommActive) {
-        // Deshabilitar todo
         allInputs.forEach(el => el.disabled = true);
         if(applyBtn) {
             applyBtn.disabled = true;
@@ -334,7 +332,6 @@ function openConfigModal() {
             applyBtn.title = "Disconnect first to change settings";
         }
     } else {
-        // Habilitar todo (excepto portSelect si estaba cargando, pero el fetch lo maneja)
         allInputs.forEach(el => el.disabled = false);
         if(applyBtn) {
             applyBtn.disabled = false;
@@ -364,7 +361,6 @@ function toggleConfigFields() {
 function closeConfigModal() { document.getElementById('config-modal').style.display = 'none'; }
 
 function readConfigFromDOM() {
-    // Si está conectado, no deberíamos leer nada, pero por seguridad:
     if (isCommActive) return false;
 
     // Leer tipo conexión
@@ -425,7 +421,6 @@ function updateMasterCommButton() {
 }
 
 function startCommunication() {
-    // Validamos configuración antes de conectar
     if (savedConfig.connection_type === 'serial' && !savedConfig.port) {
         return alert("Please configure the Serial Port first.");
     }
@@ -596,6 +591,11 @@ function pollActiveView() {
                 const suffix = mapIdToSuffix[modbusID];
                 const el = document.getElementById('val-' + suffix);
                 if (el) el.innerText = value;
+
+                // --- ACTUALIZAR GAUGE EN VISTA OPERATOR ---
+                if (suffix === 'vsd_frequency_out' && document.getElementById('view-operator').style.display === 'block') {
+                    updateOperatorGauge(value);
+                }
             }
         }
     })
@@ -812,6 +812,7 @@ function showSection(sectionId) {
 function loadView(viewName) {
     let targetId = 'view-default';
     switch(viewName) {
+        case 'Operator': targetId = 'view-operator'; setTimeout(initOperatorGauge, 200); break;
         case 'Speed': targetId = 'view-speed'; break;
         case 'Configure': targetId = 'view-configure'; break;
         case 'Time': targetId = 'view-time'; break;
@@ -1242,4 +1243,84 @@ function exportChartToCSV() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+// =========================================================
+// 7. LÓGICA VISTA OPERATOR (Gauge Estilizado & Controles)
+// =========================================================
+
+let operatorChart = null;
+
+function initOperatorGauge() {
+    const ctx = document.getElementById('operatorGauge');
+    if (!ctx) return;
+
+    if (operatorChart) operatorChart.destroy();
+
+    // ESTILO "HERRADURA" / ROUNDED DOUGHNUT
+    operatorChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Frequency', 'Remaining'],
+            datasets: [{
+                data: [0, 60], // Valor inicial, Maximo (60Hz)
+                backgroundColor: [
+                    '#26c6da', // Cyan/Teal (Color activo)
+                    '#eceff1'  // Gris claro (Fondo de pista)
+                ],
+                borderWidth: 0,
+                borderRadius: 20, // Bordes redondeados en las puntas
+                cutout: '85%',    // Anillo delgado
+                circumference: 260, // Círculo abierto (aprox 260 grados)
+                rotation: 230       // Rotación para que la apertura quede abajo
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                tooltip: { enabled: false }, // Sin tooltips
+                legend: { display: false }   // Sin leyenda
+            },
+            animation: {
+                animateScale: true,
+                animateRotate: true
+            }
+        }
+    });
+}
+
+function updateOperatorGauge(value) {
+    if (!operatorChart) return;
+    
+    // Asumimos 60Hz como máximo para el gráfico
+    const maxFreq = 60; 
+    let val = parseFloat(value);
+    if (isNaN(val)) val = 0;
+    
+    // Clampear valor entre 0 y max
+    if (val < 0) val = 0;
+    if (val > maxFreq) val = maxFreq;
+
+    // Actualizar datos del gráfico [Valor, Restante]
+    operatorChart.data.datasets[0].data = [val, maxFreq - val];
+    
+    // Actualizar sin animación completa para suavidad
+    operatorChart.update('none'); 
+}
+
+function startVSD() {
+    if (!isCommActive) return alert("System disconnected. Please connect first.");
+    if (confirm("Are you sure you want to START the VSD?")) {
+        console.log("Sending START command...");
+        // AQUÍ CONECTARÁS TU API:
+        // fetch('/api/write', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: 'vsd_control', value: 1 }) })
+    }
+}
+
+function stopVSD() {
+    if (!isCommActive) return alert("System disconnected.");
+    console.log("Sending STOP command...");
+    // AQUÍ CONECTARÁS TU API:
+    // fetch('/api/write', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: 'vsd_control', value: 0 }) })
 }

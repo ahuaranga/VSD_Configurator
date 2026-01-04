@@ -109,6 +109,58 @@
                     <div class="home-placeholder"><h1>USER-FRIENDLY SOFTWARE</h1><p>Intelligent Controller.</p></div>
                 </div>
 
+                <div id="view-operator" class="view-section" style="display: none;">
+                    <div class="operator-layout">
+                        <div class="op-left-panel">
+                            <div class="live-grid-box">
+                                <div class="grid-header">Live Parameters</div>
+                                <div class="live-grid">
+                                    <div class="grid-item">
+                                        <span class="grid-label">Amps (A)</span>
+                                        <span id="val-vsd_current" class="grid-value">0.0</span>
+                                    </div>
+                                    <div class="grid-item">
+                                        <span class="grid-label">Load (%)</span>
+                                        <span id="val-vsd_load" class="grid-value">0</span>
+                                    </div>
+                                    <div class="grid-item">
+                                        <span class="grid-label">Volts In (V)</span>
+                                        <span id="val-vsd_volts_in" class="grid-value">0</span>
+                                    </div>
+                                    <div class="grid-item">
+                                        <span class="grid-label">Volts Out (V)</span>
+                                        <span id="val-vsd_volts_out" class="grid-value">0</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="op-controls">
+                                <button class="btn-op btn-start" onclick="startVSD()">START</button>
+                                <button class="btn-op btn-stop" onclick="stopVSD()">STOP</button>
+                            </div>
+                        </div>
+
+                        <div class="op-right-panel">
+                            <div class="gauge-container">
+                                <canvas id="operatorGauge"></canvas>
+                                <div class="gauge-value-display">
+                                    <span id="val-vsd_frequency_out" class="gauge-number">0.00</span>
+                                    <span class="gauge-unit">Hz</span>
+                                </div>
+                                <div class="gauge-label">VSD Frequency</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+
+
+
+
+
                 <div id="view-default" class="view-section" style="display: none;">
                     <h2 id="default-title">Option</h2><div class="content-placeholder">Panel under construction</div>
                 </div>
