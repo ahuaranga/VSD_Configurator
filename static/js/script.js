@@ -71,11 +71,17 @@ const DEFAULT_AXIS_MAP = {
 // 1. CONFIGURACIÓN Y ESTADO GLOBAL
 // =========================================================
 let savedConfig = {
+    connection_type: 'serial', // 'serial' o 'tcp'
+    // Serial Params
     port: null,
     baudrate: 19200,
     bytesize: 8,
     parity: 'N',
     stopbits: 1,
+    // TCP Params
+    ip_address: '',
+    tcp_port: 502,
+    // Common
     timeout: 1
 };
 
@@ -269,8 +275,25 @@ function saveAlarmChanges() {
     }
 }
 
+// --- LOGICA DEL MODAL DE CONFIGURACIÓN ---
+
 function openConfigModal() {
     document.getElementById('config-modal').style.display = 'flex';
+    
+    // Restaurar valores guardados
+    // 1. Tipo de conexión
+    const radios = document.getElementsByName('connType');
+    radios.forEach(r => {
+        if(r.value === savedConfig.connection_type) r.checked = true;
+    });
+    toggleConfigFields();
+
+    // 2. Valores TCP
+    document.getElementById('tcp-ip').value = savedConfig.ip_address;
+    document.getElementById('tcp-port').value = savedConfig.tcp_port;
+    document.getElementById('serial-timeout').value = savedConfig.timeout;
+
+    // 3. Puertos Serial
     const portSelect = document.getElementById('serial-port');
     portSelect.innerHTML = '<option value="" disabled selected>Searching...</option>';
     fetch('/api/ports')
@@ -279,7 +302,8 @@ function openConfigModal() {
             portSelect.innerHTML = '';
             if (data.length === 0) {
                 portSelect.add(new Option("No ports detected", "", true, true));
-                portSelect.disabled = true;
+                // Solo deshabilitar si estamos en modo serial
+                if(savedConfig.connection_type === 'serial') portSelect.disabled = true;
             } else {
                 portSelect.disabled = false;
                 data.forEach(port => {
@@ -287,23 +311,55 @@ function openConfigModal() {
                     if (savedConfig.port === port.device) opt.selected = true;
                     portSelect.add(opt);
                 });
-                if (!savedConfig.port) portSelect.selectedIndex = 0;
+                if (!savedConfig.port && data.length > 0) portSelect.selectedIndex = 0;
             }
         })
         .catch(() => { portSelect.innerHTML = '<option>Error loading ports</option>'; });
 }
 
+function toggleConfigFields() {
+    const radios = document.getElementsByName('connType');
+    let selected = 'serial';
+    radios.forEach(r => { if(r.checked) selected = r.value; });
+
+    const groupSerial = document.getElementById('group-serial');
+    const groupTcp = document.getElementById('group-tcp');
+    
+    if (selected === 'serial') {
+        groupSerial.style.display = 'block';
+        groupTcp.style.display = 'none';
+    } else {
+        groupSerial.style.display = 'none';
+        groupTcp.style.display = 'block';
+    }
+}
+
 function closeConfigModal() { document.getElementById('config-modal').style.display = 'none'; }
 
 function readConfigFromDOM() {
-    const port = document.getElementById('serial-port').value;
-    if (!port) { alert("Please select a valid port."); return false; }
-    savedConfig.port = port;
-    savedConfig.baudrate = document.getElementById('serial-baud').value;
-    savedConfig.bytesize = document.getElementById('serial-databits').value;
-    savedConfig.parity = document.getElementById('serial-parity').value;
-    savedConfig.stopbits = document.getElementById('serial-stopbits').value;
+    // Leer tipo conexión
+    const radios = document.getElementsByName('connType');
+    let connType = 'serial';
+    radios.forEach(r => { if(r.checked) connType = r.value; });
+    savedConfig.connection_type = connType;
     savedConfig.timeout = document.getElementById('serial-timeout').value;
+
+    if (connType === 'serial') {
+        const port = document.getElementById('serial-port').value;
+        if (!port) { alert("Please select a valid COM port."); return false; }
+        savedConfig.port = port;
+        savedConfig.baudrate = document.getElementById('serial-baud').value;
+        savedConfig.bytesize = document.getElementById('serial-databits').value;
+        savedConfig.parity = document.getElementById('serial-parity').value;
+        savedConfig.stopbits = document.getElementById('serial-stopbits').value;
+    } else {
+        // TCP
+        const ip = document.getElementById('tcp-ip').value;
+        const port = document.getElementById('tcp-port').value;
+        if (!ip) { alert("Please enter a valid IP Address."); return false; }
+        savedConfig.ip_address = ip;
+        savedConfig.tcp_port = port;
+    }
     return true;
 }
 
@@ -322,25 +378,31 @@ function toggleMasterCommunication() {
     }
 }
 
-// MODIFICADO: Agrega/Quita clase .btn-active al botón de conexión
 function updateMasterCommButton() {
     const btn = document.getElementById('btn-master-comm');
     if (!btn) return;
     if (isCommActive) {
         btn.classList.remove('comm-btn-off');
         btn.classList.add('comm-btn-on');
-        btn.classList.add('btn-active'); // <--- ACTIVAR COLOR VERDE
+        btn.classList.add('btn-active'); 
         btn.title = "Disconnect";
     } else {
         btn.classList.remove('comm-btn-on');
         btn.classList.add('comm-btn-off');
-        btn.classList.remove('btn-active'); // <--- DESACTIVAR COLOR
+        btn.classList.remove('btn-active'); 
         btn.title = "Connect";
     }
 }
 
 function startCommunication() {
-    if (!savedConfig.port) return alert("Please configure the port first.");
+    // Validamos configuración antes de conectar
+    if (savedConfig.connection_type === 'serial' && !savedConfig.port) {
+        return alert("Please configure the Serial Port first.");
+    }
+    if (savedConfig.connection_type === 'tcp' && !savedConfig.ip_address) {
+        return alert("Please configure the IP Address first.");
+    }
+
     const statusModal = document.getElementById('status-modal');
     const progressBar = document.getElementById('progress-fill');
     const statusText = document.getElementById('status-text');
@@ -350,7 +412,7 @@ function startCommunication() {
     errorArea.style.display = 'none';
     progressBar.style.width = '0%';
     progressBar.style.backgroundColor = '#008000';
-    statusText.innerText = "Starting connection sequence...";
+    statusText.innerText = `Connecting via ${savedConfig.connection_type.toUpperCase()}...`;
 
     let width = 0;
     connectionInterval = setInterval(() => {
@@ -374,7 +436,7 @@ function startCommunication() {
             startPolling();
             updateChartButtons();
             
-            // --- NUEVO: LEER FIRMWARE AL CONECTAR ---
+            // LEER FIRMWARE AL CONECTAR
             readFirmwareVersion();
 
             setTimeout(() => { statusModal.style.display = 'none'; }, 800);
@@ -419,7 +481,7 @@ function stopCommunication() {
 
         updateMasterCommButton(); 
         updateChartButtons();
-        alert("Communication stopped and port closed.");
+        alert("Communication stopped.");
     })
     .catch(err => alert("Error disconnecting: " + err));
 }
@@ -437,10 +499,10 @@ function handleLostConnection() {
     updateMasterCommButton(); 
     updateChartButtons();
     fetch('/api/disconnect', { method: 'POST' }).catch(() => {});
-    alert("ERROR: Lost connection with device.\nCheck the cable.");
+    alert("ERROR: Lost connection with device.\nCheck cable or network.");
 }
 
-// NUEVA FUNCIÓN: LEER FIRMWARE CON CONVERSIÓN HEX
+// LEER FIRMWARE
 function readFirmwareVersion() {
     fetch('/api/read_batch', {
         method: 'POST',
@@ -455,16 +517,11 @@ function readFirmwareVersion() {
         const el = document.getElementById('fw-display');
         if (el) {
             if (ver !== null && rel !== null && ver !== undefined && rel !== undefined) {
-                // LÓGICA DE CONVERSIÓN CORREGIDA:
-                // 1. Convertir Decimal (ej: 8487) a Hexadecimal (ej: "2127")
+                // LÓGICA DE CONVERSIÓN HEX
                 let hexVer = ver.toString(16);
-                
-                // 2. Insertar el punto después del primer carácter (ej: "2.127")
                 if (hexVer.length > 1) {
                     hexVer = hexVer.charAt(0) + '.' + hexVer.slice(1);
                 }
-                
-                // 3. Mostrar concatenado
                 el.innerText = `Fw: ${hexVer}r${rel}`;
             } else {
                 el.innerText = "Fw: Error";
@@ -535,9 +592,7 @@ function setTopLed(isConnected) {
 // 5. LÓGICA DE MENÚS Y PANELES
 // =========================================================
 
-// Función para manejar el resaltado visual
 function updateSidebarHighlight(activeType) {
-    // 1. Limpiar todos (Home, Menu, Chart)
     const homeBtn = document.querySelector('.home-btn');
     const menuBtn = document.querySelector('.menu-btn');
     const chartBtn = document.querySelector('.chart-btn');
@@ -546,7 +601,6 @@ function updateSidebarHighlight(activeType) {
     if (menuBtn) menuBtn.classList.remove('btn-active');
     if (chartBtn) chartBtn.classList.remove('btn-active');
 
-    // 2. Activar el solicitado
     if (activeType === 'home' && homeBtn) homeBtn.classList.add('btn-active');
     if (activeType === 'menu' && menuBtn) menuBtn.classList.add('btn-active');
     if (activeType === 'chart' && chartBtn) chartBtn.classList.add('btn-active');
@@ -581,12 +635,12 @@ function toggleMenuSystem() {
             isMenuOpen = true;
             breadcrumb.innerText = "Menu";
         }
-        updateSidebarHighlight('menu'); // Resalta MENU al volver de Chart
+        updateSidebarHighlight('menu'); 
     } else {
         isMenuOpen = !isMenuOpen;
         if (isMenuOpen) {
             if (currentMainIndex === -1) breadcrumb.innerText = "Menu";
-            updateSidebarHighlight('menu'); // Resalta MENU
+            updateSidebarHighlight('menu'); 
         } else {
             const homeView = document.getElementById('view-home');
             if (homeView.style.display === 'block') {
@@ -599,7 +653,6 @@ function toggleMenuSystem() {
     updateMenuVisibility(); 
 }
 
-// Modificado para aceptar flag de inicio
 function goHome(isStartup = false) {
     isMenuOpen = false; 
     currentMainIndex = -1; 
@@ -610,8 +663,6 @@ function goHome(isStartup = false) {
     updateMenuVisibility(); 
     showSection('view-home');
     currentViewRows = [];
-
-    // LÓGICA DE COLOR: Solo si NO es startup
     if (!isStartup) {
         updateSidebarHighlight('home');
     }
@@ -710,8 +761,6 @@ function openChartModule() {
     const btnClear = document.getElementById('btn-clear-vars');
     if (list && btnClear) { btnClear.disabled = (list.children.length === 0); }
     updateChartButtons();
-
-    // NUEVO: Resaltar botón Chart
     updateSidebarHighlight('chart');
 }
 
@@ -847,7 +896,6 @@ function init() {
     setInterval(updateClock, 1000); 
     updateClock(); 
     
-    // STARTUP: Llamamos goHome con TRUE para que NO pinte el botón
     goHome(true); 
     
     document.getElementById('breadcrumb').innerText = "";

@@ -452,15 +452,34 @@
     <div id="config-modal" class="modal-overlay" style="display: none;">
        <div class="modal-window">
             <fieldset class="group-box modal-fieldset">
-                <legend>Communication Parameters</legend>
+                <legend>Connection Settings</legend>
+                
+                <div class="config-type-selector">
+                    <label>
+                        <input type="radio" name="connType" value="serial" checked onchange="toggleConfigFields()"> Serial
+                    </label>
+                    <label>
+                        <input type="radio" name="connType" value="tcp" onchange="toggleConfigFields()"> TCP/IP
+                    </label>
+                </div>
+
                 <div id="conn-settings-form">
-                    <div class="form-row"><label>Port:</label><select id="serial-port" class="full-width-select" style="font-weight: bold;"><option value="" disabled selected>Searching...</option></select></div>
-                    <div class="form-row"><label>Baud Rate:</label><select id="serial-baud" class="full-width-select"><option value="19200" selected>19200</option><option value="9600">9600</option><option value="38400">38400</option></select></div>
-                    <div class="form-row"><label>Data Bits:</label><select id="serial-databits" class="full-width-select"><option value="8">8</option><option value="7">7</option></select></div>
-                    <div class="form-row"><label>Parity:</label><select id="serial-parity" class="full-width-select"><option value="N" selected>None (N)</option><option value="E">Even (E)</option><option value="O">Odd (O)</option></select></div>
-                    <div class="form-row"><label>Stop Bits:</label><select id="serial-stopbits" class="full-width-select"><option value="1">1</option><option value="2">2</option></select></div>
+                    <div id="group-serial">
+                        <div class="form-row"><label>Port:</label><select id="serial-port" class="full-width-select" style="font-weight: bold;"><option value="" disabled selected>Searching...</option></select></div>
+                        <div class="form-row"><label>Baud Rate:</label><select id="serial-baud" class="full-width-select"><option value="19200" selected>19200</option><option value="9600">9600</option><option value="38400">38400</option><option value="115200">115200</option></select></div>
+                        <div class="form-row"><label>Data Bits:</label><select id="serial-databits" class="full-width-select"><option value="8">8</option><option value="7">7</option></select></div>
+                        <div class="form-row"><label>Parity:</label><select id="serial-parity" class="full-width-select"><option value="N" selected>None (N)</option><option value="E">Even (E)</option><option value="O">Odd (O)</option></select></div>
+                        <div class="form-row"><label>Stop Bits:</label><select id="serial-stopbits" class="full-width-select"><option value="1">1</option><option value="2">2</option></select></div>
+                    </div>
+
+                    <div id="group-tcp" style="display: none;">
+                        <div class="form-row"><label>IP Address:</label><input id="tcp-ip" type="text" placeholder="192.168.1.100" class="input-right"></div>
+                        <div class="form-row"><label>Port:</label><input id="tcp-port" type="number" value="502" class="input-right"></div>
+                    </div>
+
                     <div class="form-row"><label>Timeout (s):</label><input id="serial-timeout" type="number" value="1" class="input-right"></div>
                 </div>
+                
                 <div style="margin-top: 15px; display: flex; flex-direction: row; gap: 8px;">
                     <button class="modal-btn" onclick="applyConfigParams()">Apply</button>
                     <button class="modal-btn" onclick="okConfigParams()">OK</button>

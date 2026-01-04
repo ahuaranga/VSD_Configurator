@@ -107,15 +107,8 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: var(--font-main);
 
 /* NUEVO: Estado Activo (Verde Menta Suave) */
 .btn-active {
-
-
-
-
     background: #aadef0 !important; /* Color exacto de la imagen */
     border-color: #66ccff !important; /* Borde azul oscuro para dar contraste y definición */
-
-
-
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.1) !important;
 }
 
@@ -299,6 +292,24 @@ input:focus, select:focus { border-color: var(--highlight-blue); }
 }
 .modal-fieldset { margin: 0; background: #f0f0f0; border: 1px solid #aaa; }
 .modal-fieldset legend { background-color: transparent; font-weight: bold; color: #444; }
+
+/* NUEVO: Selector de Tipo de Conexión */
+.config-type-selector {
+    display: flex;
+    justify-content: space-around;
+    padding: 5px 0 15px 0;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 15px;
+}
+.config-type-selector label {
+    font-weight: bold;
+    color: #1a2d4c;
+    cursor: pointer;
+    font-size: 14px;
+}
+.config-type-selector input {
+    margin-right: 5px;
+}
 
 .modal-btn { 
     width: 100%; padding: 8px; background: linear-gradient(to bottom, #a8cbf7, #85b1e6); 
