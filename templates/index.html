@@ -183,9 +183,19 @@
                             <div class="form-row"><label>Speed(Hz):</label><span class="value-text">0</span></div>
                         </fieldset>
                         <fieldset class="group-box"><legend>Parameters</legend>
-                            <div class="form-row"><label>Target Speed (Hz):</label><input type="number" value="60"></div>
-                            <div class="form-row"><label>Maximum (Hz):</label><input type="number" value="60"></div>
-                            <div class="form-row"><label>Minimum (Hz):</label><input type="number" value="20"></div>
+                            <div class="form-row">
+                                <label>Target Speed (Hz):</label>
+                                <input id="val-vsd_target_freq" type="number" step="0.01" onchange="writeGeneric('vsd_target_freq', this.value)">
+                            </div>
+                            <div class="form-row">
+                                <label>Maximum (Hz):</label>
+                                <input id="val-vsd_max_speed" type="number" step="0.01" onchange="writeGeneric('vsd_max_speed', this.value)">
+                            </div>
+                            <div class="form-row">
+                                <label>Minimum (Hz):</label>
+                                <input id="val-vsd_min_speed" type="number" step="0.01" onchange="writeGeneric('vsd_min_speed', this.value)">
+                            </div>
+                            
                             <div class="form-row"><label>Startup Freq. (Hz):</label><input type="number" value="7" class="input-transparent"></div>
                             <div class="form-row"><label>Carrier Freq. (kHz):</label><select class="blue-select"><option>2</option></select></div>
                         </fieldset>

@@ -14,6 +14,11 @@ const TAG_MAP = {
     // GRUPO 3: VARIABLE SPEED DRIVE (VSD)
     'vsd_motor_rpm': 'vsd_motor_rpm',
     'vsd_target_freq': 'vsd_target_freq', // NUEVO REGISTRO
+
+    'vsd_min_speed': 'vsd_min_speed',
+    'vsd_max_speed': 'vsd_max_speed',
+
+
     'vsd_frequency_out': 'vsd_frequency_out',
     'vsd_current': 'vsd_current',
     'vsd_motor_current': 'vsd_motor_current',
@@ -555,15 +560,18 @@ function pollActiveView() {
     if (!isCommActive) return;
     let idsToRead = [];
     let mapIdToSuffix = {};
+    
+    // Recolectamos IDs visibles
     for (const [suffix, modbusID] of Object.entries(TAG_MAP)) {
         const el = document.getElementById('val-' + suffix);
+        // Leemos solo si el elemento existe y es visible (offsetParent no es null)
         if (el && el.offsetParent !== null) {
             idsToRead.push(modbusID);
             mapIdToSuffix[modbusID] = suffix;
         }
     }
 
-    // --- AGREGADO: Si estamos en Operator, leer vsd_target_freq también ---
+    // Lógica especial para Operador (Target Freq)
     if (document.getElementById('view-operator').style.display === 'block') {
         const targetFreqId = TAG_MAP['vsd_target_freq'];
         if (targetFreqId && !idsToRead.includes(targetFreqId)) {
@@ -573,6 +581,7 @@ function pollActiveView() {
     }
 
     if (idsToRead.length === 0) return;
+
     fetch('/api/read_batch', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -585,19 +594,27 @@ function pollActiveView() {
             if (value !== null) {
                 const suffix = mapIdToSuffix[modbusID];
                 const el = document.getElementById('val-' + suffix);
-                if (el) el.innerText = value;
+                
+                if (el) {
+                    // --- MEJORA: Manejo inteligente de Inputs vs Texto ---
+                    if (el.tagName === 'INPUT') {
+                        // Solo actualizamos si el usuario NO está escribiendo en ese momento
+                        if (document.activeElement !== el) {
+                            el.value = value;
+                        }
+                    } else {
+                        el.innerText = value;
+                    }
+                }
 
-                // --- ACTUALIZAR GAUGE EN VISTA OPERATOR ---
+                // Actualizar Gauge de Operador si corresponde
                 if (suffix === 'vsd_frequency_out' && document.getElementById('view-operator').style.display === 'block') {
                     updateOperatorGauge(value);
                 }
-
-                // --- ACTUALIZAR INPUT DE TARGET SPEED (si no tiene foco) ---
+                // Actualizar Input Operador si corresponde
                 if (suffix === 'vsd_target_freq' && document.getElementById('view-operator').style.display === 'block') {
                     const inputEl = document.getElementById('op-target-speed-input');
-                    if (document.activeElement !== inputEl) {
-                        inputEl.value = value;
-                    }
+                    if (document.activeElement !== inputEl) inputEl.value = value;
                 }
             }
         }
@@ -1390,4 +1407,38 @@ function stopVSD() {
         }
     })
     .catch(err => alert("Communication Error: " + err));
+}
+
+
+// Función genérica para escribir valores desde Inputs
+function writeGeneric(suffix, value) {
+    if (!isCommActive) {
+        alert("Please connect first.");
+        return;
+    }
+    
+    const modbusID = TAG_MAP[suffix];
+    if (!modbusID) return;
+
+    fetch('/api/write', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ id: modbusID, value: value })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.status === 'success') {
+            console.log(`Wrote ${value} to ${suffix}`);
+            // Feedback visual: Parpadeo verde
+            const el = document.getElementById('val-' + suffix);
+            if(el) {
+                const originalBg = el.style.backgroundColor;
+                el.style.backgroundColor = "#dcedc8"; // Verde claro
+                setTimeout(() => el.style.backgroundColor = originalBg, 500);
+            }
+        } else {
+            alert("Error writing: " + (data.error || "Unknown"));
+        }
+    })
+    .catch(err => alert("Comm Error: " + err));
 }
