@@ -13,11 +13,10 @@ const TAG_MAP = {
 
     // GRUPO 3: VARIABLE SPEED DRIVE (VSD)
     'vsd_motor_rpm': 'vsd_motor_rpm',
-    'vsd_target_freq': 'vsd_target_freq', // NUEVO REGISTRO
+    'vsd_target_freq': 'vsd_target_freq', 
 
     'vsd_min_speed': 'vsd_min_speed',
     'vsd_max_speed': 'vsd_max_speed',
-
 
     'vsd_frequency_out': 'vsd_frequency_out',
     'vsd_current': 'vsd_current',
@@ -47,7 +46,7 @@ const UNIT_MAP = {
     
     // UNIDADES VSD
     'vsd_motor_rpm': 'RPM',
-    'vsd_target_freq': 'Hz', // Unidad para target freq
+    'vsd_target_freq': 'Hz',
     'vsd_frequency_out': 'Hz',
     'vsd_current': 'A',
     'vsd_motor_current': 'A',
@@ -571,13 +570,19 @@ function pollActiveView() {
         }
     }
 
-    // Lógica especial para Operador (Target Freq)
+    // Lógica especial para Operador:
+    // Leemos Target Speed y Max Speed para configurar el Gauge.
+    // Omitimos Min Speed para que la etiqueta visual se mantenga en 0.
     if (document.getElementById('view-operator').style.display === 'block') {
-        const targetFreqId = TAG_MAP['vsd_target_freq'];
-        if (targetFreqId && !idsToRead.includes(targetFreqId)) {
-            idsToRead.push(targetFreqId);
-            mapIdToSuffix[targetFreqId] = 'vsd_target_freq';
-        }
+        const extraVars = ['vsd_target_freq', 'vsd_max_speed'];
+        
+        extraVars.forEach(suffix => {
+            const mId = TAG_MAP[suffix];
+            if (mId && !idsToRead.includes(mId)) {
+                idsToRead.push(mId);
+                mapIdToSuffix[mId] = suffix;
+            }
+        });
     }
 
     if (idsToRead.length === 0) return;
@@ -596,7 +601,7 @@ function pollActiveView() {
                 const el = document.getElementById('val-' + suffix);
                 
                 if (el) {
-                    // --- MEJORA: Manejo inteligente de Inputs vs Texto ---
+                    // Manejo inteligente de Inputs vs Texto
                     if (el.tagName === 'INPUT') {
                         // Solo actualizamos si el usuario NO está escribiendo en ese momento
                         if (document.activeElement !== el) {
@@ -607,15 +612,25 @@ function pollActiveView() {
                     }
                 }
 
-                // Actualizar Gauge de Operador si corresponde
+                // --- ACTUALIZACIONES ESPECIALES ---
+                
+                // Actualizar Gauge de Operador
                 if (suffix === 'vsd_frequency_out' && document.getElementById('view-operator').style.display === 'block') {
                     updateOperatorGauge(value);
                 }
-                // Actualizar Input Operador si corresponde
+                
+                // Actualizar Input Operador Target Speed
                 if (suffix === 'vsd_target_freq' && document.getElementById('view-operator').style.display === 'block') {
                     const inputEl = document.getElementById('op-target-speed-input');
                     if (document.activeElement !== inputEl) inputEl.value = value;
                 }
+
+                // Actualizar etiquetas MAX en el Gauge
+                if (suffix === 'vsd_max_speed') {
+                    const elMax = document.getElementById('op-limit-max');
+                    if(elMax) elMax.innerText = value;
+                }
+                // (Omitimos vsd_min_speed para mantener el "0" estático)
             }
         }
     })
@@ -1277,22 +1292,22 @@ function initOperatorGauge() {
 
     if (operatorChart) operatorChart.destroy();
 
-    // ESTILO "HERRADURA" / ROUNDED DOUGHNUT (Cian/Teal)
+    // ESTILO "HERRADURA" / ROUNDED DOUGHNUT (Cian/Gris)
     operatorChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: ['Frequency', 'Remaining'],
             datasets: [{
-                data: [0, 60], // Valor inicial, Maximo (60Hz)
+                data: [0, 60], // Inicio en 0
                 backgroundColor: [
-                    '#eceff1', // CAMBIO: Gris para el valor activo (oculto)
-                    '#eceff1'  // Gris para el fondo
+                    '#00bcd4', // COLOR ACTIVO (Cyan)
+                    '#eceff1'  // COLOR FONDO (Gris claro)
                 ],
                 borderWidth: 0,
-                borderRadius: 20, // Bordes redondeados en las puntas
-                cutout: '85%',    // Anillo delgado
-                circumference: 260, // Círculo abierto (aprox 260 grados)
-                rotation: 230       // Rotación para que la apertura quede abajo
+                borderRadius: 20, // Bordes redondeados
+                cutout: '85%',    // Grosor del anillo
+                circumference: 260, // Ángulo total del gauge
+                rotation: 230       // Rotación inicial
             }]
         },
         options: {
@@ -1302,28 +1317,45 @@ function initOperatorGauge() {
                 tooltip: { enabled: false }, // Sin tooltips
                 legend: { display: false }   // Sin leyenda
             },
-            animation: false // <--- ANIMACIÓN DESACTIVADA PARA EVITAR "GLITCH"
+            // ACTIVAMOS ANIMACIÓN
+            animation: {
+                duration: 800, // 0.8s
+                easing: 'easeOutQuart'
+            }
         }
     });
+
+    // Forzar etiqueta MIN a "0" estático al iniciar
+    const elMin = document.getElementById('op-limit-min');
+    if(elMin) elMin.innerText = "0"; 
 }
 
 function updateOperatorGauge(value) {
     if (!operatorChart) return;
     
-    // Asumimos 60Hz como máximo para el gráfico
-    const maxFreq = 60; 
+    // 1. Leer Máximo dinámico
+    const maxEl = document.getElementById('op-limit-max');
+    let maxFreq = 60; 
+    
+    if (maxEl) {
+        const parsedMax = parseFloat(maxEl.innerText);
+        if (!isNaN(parsedMax) && parsedMax > 0) {
+            maxFreq = parsedMax;
+        }
+    }
+
     let val = parseFloat(value);
     if (isNaN(val)) val = 0;
     
-    // Clampear valor entre 0 y max
+    // 2. Clampear valor
     if (val < 0) val = 0;
     if (val > maxFreq) val = maxFreq;
 
-    // Actualizar datos del gráfico [Valor, Restante]
+    // 3. Actualizar datos: [Valor Actual, Resto]
     operatorChart.data.datasets[0].data = [val, maxFreq - val];
     
-    // Actualizar sin animación completa para suavidad
-    operatorChart.update('none'); 
+    // 4. Actualizar CON animación
+    operatorChart.update(); 
 }
 
 // NUEVO: Función para escribir la velocidad target desde el panel de operador
