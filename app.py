@@ -3,20 +3,23 @@ import sys
 import webbrowser
 import sqlite3
 import serial.tools.list_ports
-import minimalmodbus
-# Importamos la librería para TCP/IP
-from pymodbus.client import ModbusTcpClient
 from threading import Timer, Lock
 from flask import Flask, render_template, url_for, jsonify, request
+import logging
 
-# Importamos el mapa
+# -------------------------------------------------------------------------
+# MIGRACIÓN: Pymodbus v3.11+
+# -------------------------------------------------------------------------
+from pymodbus.client import ModbusTcpClient, ModbusSerialClient
+
+# Importamos el mapa de registros
 from modbus_map import REGISTER_MAP
 
 # -------------------------------------------------------------------------
 # 1. CONFIGURACIÓN INICIAL
 # -------------------------------------------------------------------------
 instrument = None
-modbus_lock = Lock()  # SEMÁFORO: Evita choques en el puerto serial/red
+modbus_lock = Lock()
 
 if getattr(sys, 'frozen', False):
     template_folder = os.path.join(sys._MEIPASS, 'templates')
@@ -53,15 +56,17 @@ def get_ports():
     return jsonify(ports_data)
 
 # -------------------------------------------------------------------------
-# 2. CLASE WRAPPER HÍBRIDA (SERIAL + TCP)
+# 2. CLASE WRAPPER DEFINITIVA (Ajustada a tu entorno)
 # -------------------------------------------------------------------------
 class VSDInstrument:
     def __init__(self, config):
-        self.mode = config.get('connection_type', 'serial')  # 'serial' o 'tcp'
+        self.mode = config.get('connection_type', 'serial')
         self.config = config
-        self.serial_inst = None
-        self.tcp_client = None
+        self.client = None
         self.slave_id = 1
+        
+        # Según tu diagnóstico, tu versión usa 'device_id'.
+        self.id_arg_name = 'device_id'
 
     def connect(self):
         if self.mode == 'serial':
@@ -69,62 +74,71 @@ class VSDInstrument:
             if not port:
                 raise Exception("Puerto Serial no definido")
             
-            self.serial_inst = minimalmodbus.Instrument(port, self.slave_id)
-            self.serial_inst.serial.baudrate = int(self.config.get('baudrate', 19200))
-            self.serial_inst.serial.bytesize = int(self.config.get('bytesize', 8))
-            self.serial_inst.serial.parity = self.config.get('parity', 'N')
-            self.serial_inst.serial.stopbits = int(self.config.get('stopbits', 1))
-            self.serial_inst.serial.timeout = float(self.config.get('timeout', 1))
-            self.serial_inst.mode = minimalmodbus.MODE_RTU
-            
-            self.serial_inst.serial.reset_input_buffer()
-            self.serial_inst.serial.reset_output_buffer()
+            # Configuración Serial para Pymodbus v3.x (SIN method='rtu')
+            self.client = ModbusSerialClient(
+                port=port,
+                baudrate=int(self.config.get('baudrate', 19200)),
+                bytesize=int(self.config.get('bytesize', 8)),
+                parity=self.config.get('parity', 'N'),
+                stopbits=int(self.config.get('stopbits', 1)),
+                timeout=float(self.config.get('timeout', 1))
+            )
 
         elif self.mode == 'tcp':
             ip = self.config.get('ip_address')
-            port = int(self.config.get('tcp_port', 502))
+            tcp_port = int(self.config.get('tcp_port', 502))
             if not ip:
                 raise Exception("Dirección IP no definida")
 
-            self.tcp_client = ModbusTcpClient(ip, port=port, timeout=float(self.config.get('timeout', 1)))
-            if not self.tcp_client.connect():
-                 raise Exception(f"No se pudo conectar a {ip}:{port}")
+            self.client = ModbusTcpClient(
+                host=ip,
+                port=tcp_port,
+                timeout=float(self.config.get('timeout', 1))
+            )
         else:
-            raise Exception(f"Modo de conexión desconocido: {self.mode}")
+            raise Exception(f"Modo desconocido: {self.mode}")
+
+        # Intentamos conectar
+        if not self.client.connect():
+            raise Exception(f"Fallo al conectar ({self.mode}).")
 
     def close(self):
-        if self.serial_inst and self.serial_inst.serial:
-            self.serial_inst.serial.close()
-        if self.tcp_client:
-            self.tcp_client.close()
+        if self.client:
+            self.client.close()
 
     def read_register(self, address, decimals=0):
-        if self.mode == 'serial':
-            return self.serial_inst.read_register(address, decimals, functioncode=3, signed=False)
+        if not self.client:
+            raise Exception("Cliente no conectado")
+
+        # Usamos el argumento 'device_id' detectado
+        kwargs = {self.id_arg_name: self.slave_id}
         
-        elif self.mode == 'tcp':
-            # CORRECCIÓN: Usamos 'device_id' en lugar de 'slave'
-            rr = self.tcp_client.read_holding_registers(address=address, count=1, device_id=self.slave_id)
-            if rr.isError():
-                raise Exception(f"Error de lectura Modbus TCP: {rr}")
-            
-            raw_val = rr.registers[0]
-            if decimals > 0:
-                return float(raw_val) / (10 ** decimals)
-            return raw_val
+        rr = self.client.read_holding_registers(address=address, count=1, **kwargs)
+        
+        if rr.isError():
+            raise Exception(f"Error Modbus (Lectura): {rr}")
+
+        raw_val = rr.registers[0]
+
+        if decimals > 0:
+            return float(raw_val) / (10 ** decimals)
+        return raw_val
 
     def write_register(self, address, value, decimals=0):
-        if self.mode == 'serial':
-            self.serial_inst.write_register(address, value, decimals, functioncode=16, signed=False)
-        
-        elif self.mode == 'tcp':
-            raw_val = int(value * (10 ** decimals))
-            raw_val = raw_val & 0xFFFF
-            
-            # CORRECCIÓN: Usamos 'device_id' en lugar de 'slave'
-            wr = self.tcp_client.write_register(address=address, value=raw_val, device_id=self.slave_id)
-            if wr.isError():
-                raise Exception(f"Error de escritura Modbus TCP: {wr}")
+        if not self.client:
+            raise Exception("Cliente no conectado")
+
+        raw_val = int(value * (10 ** decimals))
+        raw_val = raw_val & 0xFFFF 
+
+        # Usamos el argumento 'device_id' detectado
+        kwargs = {self.id_arg_name: self.slave_id}
+
+        # Usamos write_registers (plural) para forzar FC16
+        wr = self.client.write_registers(address=address, values=[raw_val], **kwargs)
+
+        if wr.isError():
+            raise Exception(f"Error Modbus (Escritura): {wr}")
 
 
 # -------------------------------------------------------------------------
@@ -144,14 +158,17 @@ def connect_instrument():
         try:
             instrument = VSDInstrument(data)
             instrument.connect()
-            # Prueba de lectura con el registro 855 (validado en diagnóstico)
+            
+            # Prueba de lectura (Health Check)
             instrument.read_register(855, 0)
-            return jsonify({"status": "success", "message": "Conexión Exitosa"})
+            
+            return jsonify({"status": "success", "message": "Conectado"})
         except Exception as e:
             if instrument:
                 try: instrument.close()
                 except: pass
             instrument = None
+            print(f"ERROR: {e}") # Log consola
             return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/disconnect', methods=['POST'])
@@ -166,21 +183,29 @@ def disconnect_instrument():
             return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/write', methods=['POST'])
-def write_register():
+def write_register_endpoint():
     global instrument
     if not instrument: return jsonify({"error": "Desconectado"}), 400
     data = request.json
     reg_id = data.get('id')
-    user_value = float(data.get('value'))
+    try:
+        user_value = float(data.get('value'))
+    except:
+        return jsonify({"error": "Valor numérico inválido"}), 400
+    
     reg_def = REGISTER_MAP.get(reg_id)
     if not reg_def: return jsonify({"error": "Registro no mapeado"}), 404
 
     with modbus_lock:
         try:
             scale = reg_def.get('scale', 1)
-            raw_value = int(user_value * scale)
-            instrument.write_register(reg_def['address'], raw_value, decimals=0)
-            return jsonify({"status": "success", "written": raw_value})
+            decimals = 0
+            if scale == 10: decimals = 1
+            elif scale == 100: decimals = 2
+            elif scale == 1000: decimals = 3
+            
+            instrument.write_register(reg_def['address'], user_value, decimals=decimals)
+            return jsonify({"status": "success", "written": user_value})
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
@@ -191,18 +216,24 @@ def read_batch():
     requested_ids = request.json.get('ids', [])
     results = {}
     success_count = 0 
+    
     with modbus_lock:
         for reg_id in requested_ids:
             reg_def = REGISTER_MAP.get(reg_id)
             if reg_def:
                 try:
-                    raw_val = instrument.read_register(reg_def['address'], decimals=0)
                     scale = reg_def.get('scale', 1)
-                    real_val = raw_val / scale
+                    decimals = 0
+                    if scale == 10: decimals = 1
+                    elif scale == 100: decimals = 2
+                    elif scale == 1000: decimals = 3
+                    
+                    real_val = instrument.read_register(reg_def['address'], decimals=decimals)
                     results[reg_id] = real_val
                     success_count += 1
                 except Exception as e:
                     results[reg_id] = None
+                    
     if len(requested_ids) > 0 and success_count == 0:
         return jsonify({"error": "Device unresponsive"}), 500
     return jsonify(results)
