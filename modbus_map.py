@@ -7,18 +7,18 @@ Estructura: Clave de variable -> {dirección, tipo, escala, unidad, acceso}
 
 REGISTER_MAP = {
     # ==========================================
-    # GRUPO 0: CONTROL REMOTO (Nuevos comandos)
+    # GRUPO 0: CONTROL REMOTO (Coils / Bobinas)
     # ==========================================
     "vsd_remote_stop": {
-        "address": 0,    # Offset 0 según tabla
-        "type": "uint",
+        "address": 0,    # Offset 0 (Coil 1)
+        "type": "coil",  # CAMBIO IMPORTANTE: Es una bobina, no un entero
         "scale": 1,
         "unit": "",
         "access": "rw"
     },
     "vsd_remote_start": {
-        "address": 2,    # Offset 2 según tabla
-        "type": "uint",
+        "address": 2,    # Offset 2 (Coil 3)
+        "type": "coil",  # CAMBIO IMPORTANTE
         "scale": 1,
         "unit": "",
         "access": "rw"

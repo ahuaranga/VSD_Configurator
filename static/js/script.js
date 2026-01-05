@@ -1395,29 +1395,69 @@ function writeTargetSpeed() {
 
 
 
-function startVSD() {
+// Función START actualizada: Envía 2 pulsos (ON-OFF-ON-OFF)
+async function startVSD() {
     if (!isCommActive) return alert("System disconnected. Please connect first.");
     
-    if (confirm("Are you sure you want to START the VSD?")) {
-        console.log("Sending START command...");
-        
-        // Enviamos un 1 al registro vsd_remote_start (Offset 2)
-        fetch('/api/write', {
+    if (!confirm("Are you sure you want to START the VSD? (Sending 2 Pulses)")) return;
+
+    // Helper para esperar (delay)
+    const delay = ms => new Promise(res => setTimeout(res, ms));
+    
+    // Helper para escribir a la bobina de arranque
+    const sendStartSignal = async (val) => {
+        const response = await fetch('/api/write', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ id: 'vsd_remote_start', value: 1 })
-        })
-        .then(r => r.json())
-        .then(data => {
-            if(data.status === 'success') {
-                alert("Start command sent successfully.");
-            } else {
-                alert("Error sending start command: " + data.error);
-            }
-        })
-        .catch(err => alert("Communication Error: " + err));
+            body: JSON.stringify({ id: 'vsd_remote_start', value: val })
+        });
+        return response.json();
+    };
+
+    // Referencia al botón para feedback visual
+    const btn = document.querySelector('.btn-start');
+    const originalText = btn.innerHTML;
+
+    try {
+        console.log("--- INICIANDO SECUENCIA DE ARRANQUE (2 PULSOS) ---");
+        
+        // --- PULSO 1 ---
+        btn.innerHTML = '<span class="btn-icon">⏳</span> PULSE 1...';
+        console.log("Pulse 1: HIGH (1)");
+        await sendStartSignal(1);
+        
+        await delay(500); // 500ms encendido
+        
+        console.log("Pulse 1: LOW (0)");
+        await sendStartSignal(0);
+        
+        await delay(500); // 500ms espera entre pulsos
+
+        // --- PULSO 2 ---
+        btn.innerHTML = '<span class="btn-icon">⏳</span> PULSE 2...';
+        console.log("Pulse 2: HIGH (1)");
+        await sendStartSignal(1);
+        
+        await delay(500); // 500ms encendido
+        
+        console.log("Pulse 2: LOW (0)");
+        await sendStartSignal(0);
+
+        // --- FINALIZADO ---
+        console.log("--- SECUENCIA COMPLETADA ---");
+        btn.innerHTML = originalText;
+        alert("Start command (2 pulses) sent successfully.");
+
+    } catch (err) {
+        console.error(err);
+        btn.innerHTML = originalText;
+        alert("Error during start sequence: " + err);
     }
 }
+
+
+
+
 
 function stopVSD() {
     if (!isCommActive) return alert("System disconnected.");
