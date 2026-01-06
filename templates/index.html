@@ -57,14 +57,13 @@
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#1a2d4c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </div>
 
+            <div class="sidebar-separator"></div>
+            <div class="hmi-btn text-icon-btn" title="Ctrl Function">Ctrl</div>
+
         </div>
 
         <div class="toolbar-group bottom">
-            <div class="sidebar-separator"></div>
-            
-            <div class="hmi-btn text-icon-btn" title="PM Function">PM</div>
-            <div class="hmi-btn text-icon-btn" title="IM Function">IM</div>
-        </div>
+            </div>
     </aside>
 
     <div class="right-layout">
@@ -103,6 +102,10 @@
             <nav class="sidebar-main" id="mainMenu"><ul id="mainList"></ul></nav>
             <nav class="sidebar-sub" id="subMenu"><ul id="subList"></ul></nav>
 
+
+
+
+
             <main class="main-panel">
                 
                 <div id="view-home" class="view-section">
@@ -115,58 +118,30 @@
                             <div class="live-grid-box">
                                 <div class="grid-header">Live Parameters</div>
                                 <div class="live-grid">
-                                    <div class="grid-item">
-                                        <span class="grid-label">Amps (A)</span>
-                                        <span id="val-vsd_current" class="grid-value">0.0</span>
-                                    </div>
-                                    <div class="grid-item">
-                                        <span class="grid-label">Load (%)</span>
-                                        <span id="val-vsd_load" class="grid-value">0</span>
-                                    </div>
-                                    <div class="grid-item">
-                                        <span class="grid-label">Volts In (V)</span>
-                                        <span id="val-vsd_volts_in" class="grid-value">0</span>
-                                    </div>
-                                    <div class="grid-item">
-                                        <span class="grid-label">Volts Out (V)</span>
-                                        <span id="val-vsd_volts_out" class="grid-value">0</span>
-                                    </div>
+                                    <div class="grid-item"><span class="grid-label">Amps (A)</span><span id="val-vsd_current" class="grid-value">0.0</span></div>
+                                    <div class="grid-item"><span class="grid-label">Load (%)</span><span id="val-vsd_load" class="grid-value">0</span></div>
+                                    <div class="grid-item"><span class="grid-label">Volts In (V)</span><span id="val-vsd_volts_in" class="grid-value">0</span></div>
+                                    <div class="grid-item"><span class="grid-label">Volts Out (V)</span><span id="val-vsd_volts_out" class="grid-value">0</span></div>
                                 </div>
                             </div>
                         </div>
-
                         <div class="op-right-panel">
-                            
                             <div class="gauge-container">
                                 <canvas id="operatorGauge"></canvas>
-                                <div class="gauge-value-display">
-                                    <span id="val-vsd_frequency_out" class="gauge-number">0.00</span>
-                                    <span class="gauge-unit">Hz</span>
-                                </div>
+                                <div class="gauge-value-display"><span id="val-vsd_frequency_out" class="gauge-number">0.00</span><span class="gauge-unit">Hz</span></div>
                                 <div class="gauge-label">VSD Frequency</div>
-                            
-                                <div class="gauge-limits">
-                                    <span id="op-limit-min">0</span>
-                                    <span id="op-limit-max">60</span>
-                                </div>
+                                <div class="gauge-limits"><span id="op-limit-min">0</span><span id="op-limit-max">60</span></div>
                             </div>
-
                             <div class="target-speed-box">
                                 <div class="form-row" style="margin-bottom: 0;">
                                     <label for="op-target-speed-input">VSD Target Speed:</label>
                                     <input id="op-target-speed-input" type="number" value="0" class="input-blue-style" onchange="writeTargetSpeed()">
                                 </div>
                             </div>
-
                             <div class="op-controls">
-                                <button class="btn-op btn-start" onclick="startVSD()">
-                                    <span class="btn-icon">▶</span> START
-                                </button>
-                                <button class="btn-op btn-stop" onclick="stopVSD()">
-                                    <span class="btn-icon">■</span> STOP
-                                </button>
+                                <button class="btn-op btn-start" onclick="startVSD()"><span class="btn-icon">▶</span> START</button>
+                                <button class="btn-op btn-stop" onclick="stopVSD()"><span class="btn-icon">■</span> STOP</button>
                             </div>
-
                         </div>
                     </div>
                 </div>
@@ -188,19 +163,9 @@
                             <div class="form-row"><label>Speed(Hz):</label><span class="value-text">0</span></div>
                         </fieldset>
                         <fieldset class="group-box"><legend>Parameters</legend>
-                            <div class="form-row">
-                                <label>Target Speed (Hz):</label>
-                                <input id="val-vsd_target_freq" type="number" step="0.01" onchange="writeGeneric('vsd_target_freq', this.value)">
-                            </div>
-                            <div class="form-row">
-                                <label>Maximum (Hz):</label>
-                                <input id="val-vsd_max_speed" type="number" step="0.01" onchange="writeGeneric('vsd_max_speed', this.value)">
-                            </div>
-                            <div class="form-row">
-                                <label>Minimum (Hz):</label>
-                                <input id="val-vsd_min_speed" type="number" step="0.01" onchange="writeGeneric('vsd_min_speed', this.value)">
-                            </div>
-                            
+                            <div class="form-row"><label>Target Speed (Hz):</label><input id="val-vsd_target_freq" type="number" step="0.01" onchange="writeGeneric('vsd_target_freq', this.value)"></div>
+                            <div class="form-row"><label>Maximum (Hz):</label><input id="val-vsd_max_speed" type="number" step="0.01" onchange="writeGeneric('vsd_max_speed', this.value)"></div>
+                            <div class="form-row"><label>Minimum (Hz):</label><input id="val-vsd_min_speed" type="number" step="0.01" onchange="writeGeneric('vsd_min_speed', this.value)"></div>
                             <div class="form-row"><label>Startup Freq. (Hz):</label><input type="number" value="7" class="input-transparent"></div>
                             <div class="form-row"><label>Carrier Freq. (kHz):</label><select class="blue-select"><option>2</option></select></div>
                         </fieldset>
@@ -397,6 +362,200 @@
                             <div class="form-row"><label>Voltage Out (V):</label><span>0</span></div>
                             <div class="form-row"><label>Power Out (kW):</label><span>0</span></div>
                         </fieldset>
+                    </div>
+                </div>
+
+                <div id="view-settings-info" class="view-section" style="display: none;">
+                    <div class="columns-container">
+                        <div class="stack-container">
+                            <fieldset class="group-box"><legend>Well Settings</legend>
+                                <div class="form-row highlight-cyan"><label>1 Well Name:</label><input id="cfg-well-name" type="text" value="UYFGYUG"></div>
+                                <div class="form-row"><label>2 Flow Units:</label><select class="blue-select"><option>bpd</option><option>m3/d</option></select></div>
+                                <div class="form-row"><label>3 Temperature Units:</label><select class="blue-select"><option>C</option><option>F</option></select></div>
+                                <div class="form-row"><label>4 Pressure Units:</label><select class="blue-select"><option>psi</option><option>bar</option><option>kPa</option></select></div>
+                            </fieldset>
+                            <fieldset class="group-box"><legend>Display Settings</legend>
+                                <div class="form-row"><label>Time Out (min):</label><input type="number" value="120"></div>
+                                <div class="form-row"><label>Brightness:</label><input type="number" value="50"></div>
+                                <div class="form-row"><label>Time Set:</label><input type="text" value="16:52:42"></div>
+                                <div class="form-row"><label>Date Set:</label><input type="text" value="2026-01-06"></div>
+                                <div class="form-row"><label>Time Zone:</label><select class="blue-select"><option>UTC</option><option>GMT-5</option></select></div>
+                            </fieldset>
+                            <fieldset class="group-box"><legend>Controller Alarms:</legend>
+                                <div class="form-row"><label>Supply voltage (V):</label><span>127</span></div>
+                                <div class="form-row"><label>Supply Voltage Hi (V):</label><span>130</span><span class="bypass-text">Bypass</span></div>
+                                <div class="form-row"><label>Supply Voltage Lo (V):</label><span>100</span><span class="bypass-text">Bypass</span></div>
+                                <div class="form-row"><label>Controller Temp Hi (°C):</label><span>50</span><span class="bypass-text">Bypass</span></div>
+                            </fieldset>
+                        </div>
+                        <div class="stack-container">
+                            <fieldset class="group-box"><legend>Timers</legend>
+                                <div class="form-row checkbox-row"><label>Enable Auto Restarts:</label><input type="checkbox" checked></div>
+                                <div class="form-row checkbox-row"><label>Manual Starts Wait:</label><input type="checkbox"></div>
+                                <div class="form-row"><label>Progressive Delay (min):</label><input type="number" value="0"></div>
+                                <div class="form-row"><label>Hold Start (s):</label><input type="number" value="0"></div>
+                                <div class="form-row"><label>Lockout Reset Run Time (min):</label><input type="number" value="60"></div>
+                                <div class="form-row"><label>Soft Start Delay (s):</label><input type="number" value="2"></div>
+                                <div class="form-row"><label>Default Restarts:</label><input type="number" value="3"></div>
+                                <div class="form-row"><label>Default Restart Time (min):</label><input type="number" value="30"></div>
+                            </fieldset>
+                            <fieldset class="group-box"><legend>Info</legend>
+                                <div class="form-row"><label>Controller Temp (°C):</label><span>34</span></div>
+                                <div class="form-row"><label>Backplane Temp (°C):</label><span>30</span></div>
+                                <div class="form-row"><label>Unit SN:</label><span>817380095</span></div>
+                                <div class="form-row"><label>Firmware:</label><span>2.127r007</span></div>
+                                <div class="form-row"><label>InTouch ID:</label><span>6145281</span></div>
+                                <div class="form-row"><label>Total Number of Starts:</label><span>4</span></div>
+                                <div class="form-row"><label>Total Run Duration:</label><span>0d 00:07:57</span></div>
+                                <div class="form-row"><label>Total Stop Duration:</label><span>82d 02:17:27</span></div>
+                                <div class="form-row"><label>Previous Run Duration:</label><span>0d 00:00:11</span></div>
+                                <div class="form-row"><label>Current Stop Duration:</label><span>82d 01:07:16</span></div>
+                            </fieldset>
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+                <div id="view-slot-config" class="view-section" style="display: none;">
+                    <div class="columns-container" style="grid-template-columns: 1.1fr 1fr 0.8fr;">
+                        
+                        <div class="stack-container">
+                            <fieldset class="group-box"><legend>Device</legend>
+                                <div class="form-row highlight-cyan">
+                                    <label>1 Name:</label>
+                                    <input id="slot-cfg-name" type="text" onchange="updateSlotData('name', this.value)">
+                                </div>
+                                <div class="form-row">
+                                    <label>2 Function:</label>
+                                    <select id="slot-cfg-function" class="blue-select" onchange="updateSlotData('function', this.value)">
+                                        <option>Disabled</option>
+                                        <option>Enabled</option>
+                                    </select>
+                                </div>
+                            </fieldset>
+                            <fieldset class="group-box"><legend>Modbus Slave Port Config</legend>
+                                <div class="form-row">
+                                    <label>Site Address:</label>
+                                    <input id="slot-cfg-address" type="number" onchange="updateSlotData('address', this.value)">
+                                </div>
+                                <div class="form-row">
+                                    <label>Access:</label>
+                                    <select id="slot-cfg-access" class="blue-select" onchange="updateSlotData('access', this.value)">
+                                        <option>View Only</option><option>Read/Write</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label>Units:</label>
+                                    <select id="slot-cfg-units" class="blue-select" onchange="updateSlotData('units', this.value)">
+                                        <option>bpd, C, psi</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label>Custom Map:</label>
+                                    <select id="slot-cfg-map" class="blue-select" onchange="updateSlotData('map', this.value)">
+                                        <option>None</option>
+                                    </select>
+                                </div>
+                            </fieldset>
+                            <fieldset class="group-box"><legend>5 Instruct IP Addr</legend>
+                                <div class="form-row"><label>IP Seg 1:</label><input type="number" value="192" disabled class="input-disabled"></div>
+                                <div class="form-row"><label>IP Seg 2:</label><input type="number" value="168" disabled class="input-disabled"></div>
+                                <div class="form-row"><label>IP Seg 3:</label><input type="number" value="1" disabled class="input-disabled"></div>
+                                <div class="form-row"><label>IP Seg 4:</label><input type="number" value="11" disabled class="input-disabled"></div>
+                                <button class="btn-gray" style="width: 100%; margin-top: 5px;">Configure TCP/IP card</button>
+                            </fieldset>
+                        </div>
+
+                        <div class="stack-container">
+                            <fieldset class="group-box"><legend>Comm Settings</legend>
+                                <div class="form-row">
+                                    <label>Baud Rate:</label>
+                                    <select id="slot-cfg-baud" class="blue-select" onchange="updateSlotData('baud', this.value)">
+                                        <option>57600</option><option>9600</option><option>19200</option>
+                                    </select>
+                                </div>
+                                <div class="form-row"><label>Data Bits:</label><select class="blue-select"><option>8 bits</option><option>7 bits</option></select></div>
+                                <div class="form-row"><label>Stop Bits:</label><select class="blue-select"><option>1 bit</option><option>2 bits</option></select></div>
+                                <div class="form-row"><label>Parity:</label><select class="blue-select"><option>None</option><option>Even</option><option>Odd</option></select></div>
+                                <div class="form-row"><label>Prekey:</label><input type="number" value="2"></div>
+                                <div class="form-row"><label>Postkey:</label><input type="number" value="2"></div>
+                            </fieldset>
+                            <fieldset class="group-box"><legend>6 VSD IP Addr</legend>
+                                <div class="form-row"><label>IP Seg 1:</label><input type="number" value="192" disabled class="input-disabled"></div>
+                                <div class="form-row"><label>IP Seg 2:</label><input type="number" value="168" disabled class="input-disabled"></div>
+                                <div class="form-row"><label>IP Seg 3:</label><input type="number" value="1" disabled class="input-disabled"></div>
+                                <div class="form-row"><label>IP Seg 4:</label><input type="number" value="12" disabled class="input-disabled"></div>
+                            </fieldset>
+                        </div>
+
+                        <div class="stack-container">
+                            <fieldset class="group-box"><legend>Other Settings</legend>
+                                <div class="form-row">
+                                    <label>Slot Power</label>
+                                    <select id="slot-cfg-power" class="blue-select" onchange="updateSlotData('power', this.value)">
+                                        <option>On</option><option>Off</option>
+                                    </select>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-rs232" class="view-section" style="display: none;">
+                    <div class="columns-container">
+                        <div class="stack-container">
+                            <fieldset class="group-box"><legend>Device</legend>
+                                <div class="form-row highlight-cyan"><label>1 Name:</label><input type="text" value="Port0"></div>
+                                <div class="form-row"><label>2 Function:</label><select class="blue-select"><option>Disabled</option><option>Enabled</option></select></div>
+                            </fieldset>
+                            <fieldset class="group-box"><legend>Modbus Slave Port Config</legend>
+                                <div class="form-row"><label>Site Address:</label><input type="number" value="1"></div>
+                                <div class="form-row"><label>Access:</label><select class="blue-select"><option>Full</option><option>Read Only</option></select></div>
+                                <div class="form-row"><label>Units:</label><select class="blue-select"><option>bpd, C, psi</option></select></div>
+                                <div class="form-row"><label>Custom Map:</label><select class="blue-select"><option>None</option></select></div>
+                            </fieldset>
+                        </div>
+                        <div class="stack-container">
+                            <fieldset class="group-box"><legend>Comm Settings</legend>
+                                <div class="form-row"><label>Baud Rate:</label><select class="blue-select"><option>57600</option><option>19200</option></select></div>
+                                <div class="form-row"><label>Data Bits:</label><select class="blue-select"><option>8 bits</option></select></div>
+                                <div class="form-row"><label>Stop Bits:</label><select class="blue-select"><option>1 bit</option></select></div>
+                                <div class="form-row"><label>Parity Type:</label><select class="blue-select"><option>None</option></select></div>
+                                <div class="form-row"><label>Mode:</label><span style="font-weight: bold; padding: 4px;">RS232</span></div>
+                                <div class="form-row"><label>Prekey:</label><input type="number" value="0"></div>
+                                <div class="form-row"><label>Postkey:</label><input type="number" value="0"></div>
+                            </fieldset>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-rs485" class="view-section" style="display: none;">
+                    <div class="columns-container">
+                        <div class="stack-container">
+                            <fieldset class="group-box"><legend>Device</legend>
+                                <div class="form-row highlight-cyan"><label>1 Name:</label><input type="text" value="Port1"></div>
+                                <div class="form-row"><label>2 Function:</label><select class="blue-select"><option>Disabled</option><option>Enabled</option></select></div>
+                            </fieldset>
+                            <fieldset class="group-box"><legend>Modbus Slave Port Config</legend>
+                                <div class="form-row"><label>Site Address:</label><input type="number" value="1"></div>
+                                <div class="form-row"><label>Access:</label><select class="blue-select"><option>View Only</option><option>Read/Write</option></select></div>
+                                <div class="form-row"><label>Units:</label><select class="blue-select"><option>bpd, C, psi</option></select></div>
+                                <div class="form-row"><label>Custom Map:</label><select class="blue-select"><option>None</option></select></div>
+                            </fieldset>
+                        </div>
+                        <div class="stack-container">
+                            <fieldset class="group-box"><legend>Comm Settings</legend>
+                                <div class="form-row"><label>Baud Rate:</label><select class="blue-select"><option>19200</option><option>57600</option></select></div>
+                                <div class="form-row"><label>Data Bits:</label><select class="blue-select"><option>8 bits</option></select></div>
+                                <div class="form-row"><label>Stop Bits:</label><select class="blue-select"><option>1 bit</option></select></div>
+                                <div class="form-row"><label>Parity:</label><select class="blue-select"><option>Even</option><option>None</option></select></div>
+                                <div class="form-row"><label>Mode:</label><span style="font-weight: bold; padding: 4px;">RS485</span></div>
+                                <div class="form-row"><label>Prekey:</label><input type="number" value="2"></div>
+                                <div class="form-row"><label>Postkey:</label><input type="number" value="2"></div>
+                            </fieldset>
+                        </div>
                     </div>
                 </div>
 

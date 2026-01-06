@@ -101,6 +101,7 @@ let chartInterval = null;
 let chartPollingRate = 1000; 
 
 // --- ESTRUCTURA DEL MENU ---
+// --- ESTRUCTURA DEL MENU ---
 const menuData = [
     { id: 1, name: "VSD", subItems: ["Operator", "Summary", "Alarms", "Speed", "Time", "Configure", "Expert", "Gas Lock", "PMM Configure", "PMM Configure 2", "Diagnostics"] },
     { id: 2, name: "DHT", subItems: ["Status", "Settings"] },
@@ -109,7 +110,22 @@ const menuData = [
     { id: 5, name: "Data Acquisition", subItems: [] },
     { id: 6, name: "Logs/Trends", subItems: [] },
     { id: 7, name: "Utilities", subItems: [] },
-    { id: 8, name: "Controller", subItems: [] }
+    { 
+        id: 8, 
+        name: "Controller", 
+        subItems: [
+            "Settings/Info", 
+            "RS232", 
+            "RS485", 
+            "Slot1", 
+            "Slot2", 
+            "Slot3", 
+            "Slot4", 
+            "SlotA/B", 
+            "Expert/Updates", 
+            "Statistics"
+        ] 
+    }
 ];
 
 const mainMenu = document.getElementById('mainMenu');
@@ -855,6 +871,21 @@ function loadView(viewName) {
         case 'Expert': targetId = 'view-expert'; break;
         case 'PMM Configure': targetId = 'view-pmm-configure'; break;
         case 'PMM Configure 2': targetId = 'view-pmm-configure-2'; break;
+        
+        case 'Settings/Info': targetId = 'view-settings-info'; break;
+        case 'RS232': targetId = 'view-rs232'; break;
+        case 'RS485': targetId = 'view-rs485'; break;
+
+        // --- SLOTS (Con Lógica Independiente) ---
+        case 'Slot1':
+        case 'Slot2':
+        case 'Slot3':
+        case 'Slot4':
+            targetId = 'view-slot-config';
+            loadSlotConfigUI(viewName); // <--- AQUÍ CARGAMOS LOS DATOS ESPECÍFICOS
+            break;
+
+        case 'Diagnostics': targetId = 'view-default'; break; 
         default: document.getElementById('default-title').innerText = viewName;
     }
     showSection(targetId);
@@ -950,6 +981,51 @@ function updateConfigLocks() {
         transRatio.classList.remove('input-disabled'); vsdSpeed.classList.remove('input-disabled'); volts.classList.remove('input-disabled');
     }
 }
+
+// =========================================================
+// 8. LOGICA DE GESTIÓN DE SLOTS INDEPENDIENTES
+// =========================================================
+
+// "Base de datos" local para guardar la config de cada slot
+const slotDataStore = {
+    'Slot1': { name: 'Slot1', function: 'Disabled', address: 1, access: 'View Only', units: 'bpd, C, psi', map: 'None', baud: '57600', power: 'On' },
+    'Slot2': { name: 'Slot2', function: 'Disabled', address: 1, access: 'View Only', units: 'bpd, C, psi', map: 'None', baud: '57600', power: 'On' },
+    'Slot3': { name: 'Slot3', function: 'Disabled', address: 1, access: 'View Only', units: 'bpd, C, psi', map: 'None', baud: '57600', power: 'On' },
+    'Slot4': { name: 'Slot4', function: 'Disabled', address: 1, access: 'View Only', units: 'bpd, C, psi', map: 'None', baud: '57600', power: 'On' }
+};
+
+let currentActiveSlot = null; // Variable para saber en qué slot estamos
+
+function loadSlotConfigUI(slotName) {
+    currentActiveSlot = slotName; // Ejemplo: 'Slot1'
+    const data = slotDataStore[slotName];
+
+    // Cargar valores del objeto al HTML
+    if (data) {
+        document.getElementById('slot-cfg-name').value = data.name;
+        document.getElementById('slot-cfg-function').value = data.function;
+        document.getElementById('slot-cfg-address').value = data.address;
+        document.getElementById('slot-cfg-access').value = data.access;
+        document.getElementById('slot-cfg-units').value = data.units;
+        document.getElementById('slot-cfg-map').value = data.map;
+        document.getElementById('slot-cfg-baud').value = data.baud;
+        document.getElementById('slot-cfg-power').value = data.power;
+    }
+}
+
+// Función llamada por el evento onchange en el HTML
+function updateSlotData(field, value) {
+    if (currentActiveSlot && slotDataStore[currentActiveSlot]) {
+        slotDataStore[currentActiveSlot][field] = value;
+        console.log(`Updated ${currentActiveSlot} [${field}] to: ${value}`);
+    }
+}
+
+
+
+
+
+
 
 function init() {
     menuData.forEach((item, index) => {
