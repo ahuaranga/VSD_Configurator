@@ -13,7 +13,6 @@
     
     <aside class="left-toolbar">
         <div class="toolbar-group top">
-            
             <div class="hmi-btn home-btn" onclick="goHome()" title="Go Home">
                  <svg width="32" height="32" viewBox="0 0 24 24" fill="#1a2d4c"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             </div>
@@ -58,25 +57,15 @@
             </div>
 
             <div class="sidebar-separator"></div>
-            <div class="hmi-btn text-icon-btn" title="Ctrl Function">Ctrl</div>
-
+            <div class="hmi-btn text-icon-btn ctrl-btn" onclick="loadView('Ctrl')" title="Ctrl Function">Ctrl</div>
         </div>
-
-        <div class="toolbar-group bottom">
-            </div>
     </aside>
 
     <div class="right-layout">
         
         <header class="top-bar">
             <div class="header-left-group">
-                
-                <svg xmlns="http://www.w3.org/2000/svg"
-                     viewBox="1200 2200 2600 600"
-                     height="50" 
-                     role="img" aria-label="icView logo"
-                     style="display: block;">
-                     
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="1200 2200 2600 600" height="50" role="img" aria-label="icView logo" style="display: block;">
                      <path fill="#252B37" d="M1268.236,2316.773c0-33.731,27.345-61.076,61.076-61.076h122.152
                             c33.731,0,61.076,27.344,61.076,61.076v119.943c0.002,0.733,0.004,1.469,0.004,2.208c0,33.683,27.267,60.998,60.93,61.076
                             c0.048,0,0.094,0,0.142,0h122.151c33.731,0,61.076,27.345,61.076,61.076v122.152c0,33.731-27.345,61.076-61.076,61.076h-122.151
@@ -84,7 +73,6 @@
                             c-0.158,0-0.315,0-0.473,0h-121.682c-33.731,0-61.076-27.345-61.076-61.076V2316.773z"/>
                      <text x="1900" y="2595" fill="#252B37" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="340" font-weight="700" letter-spacing="2">icView</text>
                 </svg>
-
                 <div class="breadcrumb" id="breadcrumb"></div>
             </div>
 
@@ -101,10 +89,6 @@
         <div class="content-area">
             <nav class="sidebar-main" id="mainMenu"><ul id="mainList"></ul></nav>
             <nav class="sidebar-sub" id="subMenu"><ul id="subList"></ul></nav>
-
-
-
-
 
             <main class="main-panel">
                 
@@ -174,25 +158,42 @@
 
                 <div id="view-configure" class="view-section" style="display: none;">
                     <div class="columns-container">
-                        <fieldset class="group-box"><legend>Configuration</legend>
-                            <div class="form-row highlight-cyan"><label>1 Motor Control Mode:</label><select><option value="1">1: InductionVHz</option><option value="2">2: PM VHz</option><option value="3">3: Induction Adj Volt</option></select></div>
-                            <div class="form-row"><label>2 Voltage Class:</label><select><option value="1">1: Low (400V)</option><option value="2" selected>2: High (480V)</option></select></div>
-                            <div class="form-row"><label>3 Transformer Ratio:</label><input id="cfg-transformer-ratio" type="number" value="1"></div>
-                            <div class="form-row"><label>4 Stop Method:</label><select><option value="1" selected>1: Coast</option><option value="2">2: Decel</option></select></div>
-                            <div class="form-row"><label>5 Catch a Spinning Motor:</label><select><option value="1">1: Yes</option><option value="2" selected>2: No</option></select></div>
-                            <div class="form-row"><label>6 Catch a Spinning Motor Mode:</label><select><option value="1">1: Enhanced</option><option value="2" selected>2: Sweep</option><option value="3">3: Sweep2</option></select></div>
-                            <div class="form-row"><label>7 Rotation:</label><select><option value="1" selected>1: 0</option><option value="2">2: 1</option></select></div>
-                            <div class="form-row"><label>8 Reverse While Running:</label><button class="btn-gray">Set</button></div>
-                            <div class="form-row"><label>9 Power Ridethrough:</label><select class="blue-select"><option value="1">1: Disable</option><option value="2">2: Enable</option></select></div>
-                            <div class="form-row label-center"><label>RO0: Contactor</label></div>
-                            <div class="form-row"><label>Output Relay (RO1) Off Delay (s):</label><input type="number" value="300"></div>
-                            <div class="form-row"><label>Door Open (DI0) Action:</label><select class="blue-select"><option value="1" selected>Bypass</option><option value="2">Log</option><option value="3">Stop</option><option value="4">Stop & Log</option></select></div>
-                            <div class="form-row"><label>ESD Switch (DI1) Action:</label><select class="blue-select"><option value="1" selected>Bypass</option><option value="2">Log</option><option value="3">Stop</option><option value="4">Stop & Log</option></select></div>
-                            <div class="form-row"><label>Heat Exchanger (DI2) Action:</label><select class="blue-select"><option value="1" selected>Bypass</option><option value="2">Log</option><option value="3">Stop</option><option value="4">Stop & Log</option></select></div>
-                            <div class="form-row"><label>Safety Switch (DI3) Action:</label><select class="blue-select"><option value="1" selected>Bypass</option><option value="2">Log</option><option value="3">Stop</option><option value="4">Stop & Log</option></select></div>
-                            <div class="form-row active-param"><label>Door Interlock (DI5) Action:</label><select class="blue-select"><option value="1" selected>Bypass</option><option value="2">Log</option></select></div>
-                        </fieldset>
+                        
                         <div class="stack-container">
+                            
+                            <fieldset class="group-box">
+                                <legend>Site Identification</legend>
+                                <div class="form-row">
+                                    <label>Site Name (Max 10 chars):</label>
+                                    <div style="display:flex; gap:5px; flex:1;">
+                                        <input id="input-site-name" type="text" maxlength="10" placeholder="Reading...">
+                                        <button class="btn-gray" onclick="writeSiteName()">Set</button>
+                                    </div>
+                                </div>
+                                <div class="form-row" style="justify-content: flex-end;">
+                                    <button class="btn-gray" onclick="readSiteName()">Read from Device</button>
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="group-box"><legend>Configuration</legend>
+                                <div class="form-row highlight-cyan"><label>1 Motor Control Mode:</label><select><option value="1">1: InductionVHz</option><option value="2">2: PM VHz</option><option value="3">3: Induction Adj Volt</option></select></div>
+                                <div class="form-row"><label>2 Voltage Class:</label><select><option value="1">1: Low (400V)</option><option value="2" selected>2: High (480V)</option></select></div>
+                                <div class="form-row"><label>3 Transformer Ratio:</label><input id="cfg-transformer-ratio" type="number" value="1"></div>
+                                <div class="form-row"><label>4 Stop Method:</label><select><option value="1" selected>1: Coast</option><option value="2">2: Decel</option></select></div>
+                                <div class="form-row"><label>5 Catch a Spinning Motor:</label><select><option value="1">1: Yes</option><option value="2" selected>2: No</option></select></div>
+                                <div class="form-row"><label>6 Catch a Spinning Motor Mode:</label><select><option value="1">1: Enhanced</option><option value="2" selected>2: Sweep</option><option value="3">3: Sweep2</option></select></div>
+                                <div class="form-row"><label>7 Rotation:</label><select><option value="1" selected>1: 0</option><option value="2">2: 1</option></select></div>
+                                <div class="form-row"><label>8 Reverse While Running:</label><button class="btn-gray">Set</button></div>
+                                <div class="form-row"><label>9 Power Ridethrough:</label><select class="blue-select"><option value="1">1: Disable</option><option value="2">2: Enable</option></select></div>
+                                <div class="form-row label-center"><label>RO0: Contactor</label></div>
+                                <div class="form-row"><label>Output Relay (RO1) Off Delay (s):</label><input type="number" value="300"></div>
+                                <div class="form-row"><label>Door Open (DI0) Action:</label><select class="blue-select"><option value="1" selected>Bypass</option><option value="2">Log</option><option value="3">Stop</option><option value="4">Stop & Log</option></select></div>
+                                <div class="form-row"><label>ESD Switch (DI1) Action:</label><select class="blue-select"><option value="1" selected>Bypass</option><option value="2">Log</option><option value="3">Stop</option><option value="4">Stop & Log</option></select></div>
+                                <div class="form-row"><label>Heat Exchanger (DI2) Action:</label><select class="blue-select"><option value="1" selected>Bypass</option><option value="2">Log</option><option value="3">Stop</option><option value="4">Stop & Log</option></select></div>
+                                <div class="form-row"><label>Safety Switch (DI3) Action:</label><select class="blue-select"><option value="1" selected>Bypass</option><option value="2">Log</option><option value="3">Stop</option><option value="4">Stop & Log</option></select></div>
+                                <div class="form-row active-param"><label>Door Interlock (DI5) Action:</label><select class="blue-select"><option value="1" selected>Bypass</option><option value="2">Log</option></select></div>
+                            </fieldset>
+
                             <fieldset class="group-box"><legend>Motor Nameplate Parameters</legend>
                                 <div class="form-row"><label>Amps (A):</label><input type="number" value="10"></div>
                                 <div class="form-row"><label>P26 Setting (A):</label><input type="text" value="10.00" disabled class="input-disabled"></div>
@@ -200,6 +201,9 @@
                                 <div class="form-row"><label>Power (kW):</label><input type="number" value="75"></div>
                                 <div class="form-row"><label>Poles:</label><input type="number" value="4"></div>
                             </fieldset>
+                        </div>
+
+                        <div class="stack-container">
                             <fieldset class="group-box"><legend>Base Parameters</legend>
                                 <div class="form-row"><label>Volts (V):</label><input id="cfg-base-volts" type="number" value="460"></div>
                                 <div class="form-row"><label>Frequency (Hz):</label><input type="number" value="60"></div>
@@ -209,6 +213,7 @@
                                 <div class="form-row checkbox-row"><input type="checkbox" id="chk-underload"><label for="chk-underload">Underload Tracking On</label></div>
                             </fieldset>
                         </div>
+
                     </div>
                 </div>
 
@@ -415,12 +420,8 @@
                     </div>
                 </div>
 
-
-
-
                 <div id="view-slot-config" class="view-section" style="display: none;">
                     <div class="columns-container" style="grid-template-columns: 1.1fr 1fr 0.8fr;">
-                        
                         <div class="stack-container">
                             <fieldset class="group-box"><legend>Device</legend>
                                 <div class="form-row highlight-cyan">
@@ -556,6 +557,32 @@
                                 <div class="form-row"><label>Postkey:</label><input type="number" value="2"></div>
                             </fieldset>
                         </div>
+                    </div>
+                </div>
+
+                <div id="view-ctrl" class="view-section" style="display: none;">
+                    <div class="columns-container">
+                        
+                        <div class="stack-container">
+                            <fieldset class="group-box">
+                                <legend>Well Settings</legend>
+                                <div class="form-row highlight-cyan">
+                                    <label>1 Well Name:</label>
+                                    <input id="ui-site-name" type="text" value="" class="input-blue-style" style="width: 140px; text-align: left;" onchange="writeSiteNameFromCtrl(this.value)">
+                                </div>
+                            </fieldset>
+                        </div>
+
+                        <div class="stack-container">
+                            <fieldset class="group-box">
+                                <legend>Control Status</legend>
+                                <div class="info-panel">
+                                    Panel de control personalizado.<br>
+                                    Listo para integración.
+                                </div>
+                            </fieldset>
+                        </div>
+
                     </div>
                 </div>
 

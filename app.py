@@ -56,7 +56,7 @@ def get_ports():
     return jsonify(ports_data)
 
 # -------------------------------------------------------------------------
-# 2. CLASE WRAPPER DEFINITIVA (Soporte Coil vs Register)
+# 2. CLASE WRAPPER DEFINITIVA (Soporte Coil vs Register + Site Name)
 # -------------------------------------------------------------------------
 class VSDInstrument:
     def __init__(self, config):
@@ -64,7 +64,7 @@ class VSDInstrument:
         self.config = config
         self.client = None
         self.slave_id = 1
-        self.id_arg_name = 'device_id' # Según diagnóstico previo
+        self.id_arg_name = 'device_id' # Según diagnóstico previo (Pymodbus v3.11.4)
 
     def connect(self):
         if self.mode == 'serial':
@@ -104,7 +104,7 @@ class VSDInstrument:
 
     def read_register(self, address, decimals=0, reg_type='uint'):
         """
-        Lee datos según el tipo (coil o registro).
+        Lee datos según el tipo (coil o registro numérico).
         """
         if not self.client:
             raise Exception("Cliente no conectado")
@@ -153,9 +153,53 @@ class VSDInstrument:
             if wr.isError():
                 raise Exception(f"Error Modbus (Escritura Reg): {wr}")
 
+    # --- NUEVA FUNCIONALIDAD: SITE NAME (ASCII) ---
+    def read_site_name(self):
+        """Lee registros 1024-1028 y decodifica a ASCII (String)."""
+        if not self.client:
+            raise Exception("Cliente no conectado")
+        
+        kwargs = {self.id_arg_name: self.slave_id}
+        
+        # Leemos 5 registros (10 caracteres)
+        rr = self.client.read_holding_registers(address=1024, count=5, **kwargs)
+        if rr.isError():
+            raise Exception(f"Error leyendo Site Name: {rr}")
+        
+        decoded_name = ""
+        for reg in rr.registers:
+            # Extraer byte alto y bajo
+            char_hi = chr((reg >> 8) & 0xFF)
+            char_lo = chr(reg & 0xFF)
+            decoded_name += char_hi + char_lo
+            
+        # Limpiar caracteres nulos
+        return decoded_name.rstrip('\0')
+
+    def write_site_name(self, name_str):
+        """Codifica String a ASCII y escribe en registros 1024-1028."""
+        if not self.client:
+            raise Exception("Cliente no conectado")
+            
+        # Asegurar longitud exacta de 10 caracteres, rellenar con nulos
+        name = name_str[:10].ljust(10, '\0')
+        regs = []
+        
+        # Codificar en pares de bytes (High/Low)
+        for i in range(0, 10, 2):
+            val = (ord(name[i]) << 8) | ord(name[i+1])
+            regs.append(val)
+            
+        kwargs = {self.id_arg_name: self.slave_id}
+        
+        # Usar Write Registers (FC16)
+        wr = self.client.write_registers(address=1024, values=regs, **kwargs)
+        if wr.isError():
+            raise Exception(f"Error escribiendo Site Name: {wr}")
+
 
 # -------------------------------------------------------------------------
-# 3. LÓGICA DE API
+# 3. LÓGICA DE API (Rutas Flask)
 # -------------------------------------------------------------------------
 
 @app.route('/api/connect', methods=['POST'])
@@ -256,6 +300,26 @@ def read_batch():
     if len(requested_ids) > 0 and success_count == 0:
         return jsonify({"error": "Device unresponsive"}), 500
     return jsonify(results)
+
+# --- NUEVA RUTA PARA SITE NAME ---
+@app.route('/api/site_name', methods=['GET', 'POST'])
+def handle_site_name():
+    global instrument
+    if not instrument: 
+        return jsonify({"error": "Desconectado"}), 400
+    
+    with modbus_lock:
+        try:
+            if request.method == 'GET':
+                name = instrument.read_site_name()
+                return jsonify({"status": "success", "name": name})
+            else: # POST
+                data = request.json
+                new_name = data.get('name', '')
+                instrument.write_site_name(new_name)
+                return jsonify({"status": "success"})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
 # -------------------------------------------------------------------------
 # 4. LANZAMIENTO

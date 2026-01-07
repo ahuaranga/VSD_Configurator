@@ -101,7 +101,6 @@ let chartInterval = null;
 let chartPollingRate = 1000; 
 
 // --- ESTRUCTURA DEL MENU ---
-// --- ESTRUCTURA DEL MENU ---
 const menuData = [
     { id: 1, name: "VSD", subItems: ["Operator", "Summary", "Alarms", "Speed", "Time", "Configure", "Expert", "Gas Lock", "PMM Configure", "PMM Configure 2", "Diagnostics"] },
     { id: 2, name: "DHT", subItems: ["Status", "Settings"] },
@@ -473,6 +472,7 @@ function startCommunication() {
             startPolling();
             updateChartButtons();
             readFirmwareVersion();
+            readSiteName(); // <--- LECTURA AUTOMÁTICA AL CONECTAR
             setTimeout(() => { statusModal.style.display = 'none'; }, 800);
         } else {
             progressBar.style.backgroundColor = '#c62828';
@@ -646,7 +646,6 @@ function pollActiveView() {
                     const elMax = document.getElementById('op-limit-max');
                     if(elMax) elMax.innerText = value;
                 }
-                // (Omitimos vsd_min_speed para mantener el "0" estático)
             }
         }
     })
@@ -677,14 +676,17 @@ function updateSidebarHighlight(activeType) {
     const homeBtn = document.querySelector('.home-btn');
     const menuBtn = document.querySelector('.menu-btn');
     const chartBtn = document.querySelector('.chart-btn');
+    const ctrlBtn = document.querySelector('.ctrl-btn');
 
     if (homeBtn) homeBtn.classList.remove('btn-active');
     if (menuBtn) menuBtn.classList.remove('btn-active');
     if (chartBtn) chartBtn.classList.remove('btn-active');
+    if (ctrlBtn) ctrlBtn.classList.remove('btn-active');
 
     if (activeType === 'home' && homeBtn) homeBtn.classList.add('btn-active');
     if (activeType === 'menu' && menuBtn) menuBtn.classList.add('btn-active');
     if (activeType === 'chart' && chartBtn) chartBtn.classList.add('btn-active');
+    if (activeType === 'ctrl' && ctrlBtn) ctrlBtn.classList.add('btn-active');
 }
 
 function toggleMenuSystem() { 
@@ -865,7 +867,9 @@ function loadView(viewName) {
     switch(viewName) {
         case 'Operator': targetId = 'view-operator'; setTimeout(initOperatorGauge, 50); break;
         case 'Speed': targetId = 'view-speed'; break;
-        case 'Configure': targetId = 'view-configure'; break;
+        case 'Configure': targetId = 'view-configure'; 
+            if(isCommActive) setTimeout(readSiteName, 200); // <--- LECTURA AL ENTRAR
+            break;
         case 'Time': targetId = 'view-time'; break;
         case 'Alarms': targetId = 'view-alarms'; break;
         case 'Expert': targetId = 'view-expert'; break;
@@ -875,17 +879,27 @@ function loadView(viewName) {
         case 'Settings/Info': targetId = 'view-settings-info'; break;
         case 'RS232': targetId = 'view-rs232'; break;
         case 'RS485': targetId = 'view-rs485'; break;
-
+        
+        // --- CASO CONTROL PERSONALIZADO ---
+        case 'Ctrl': 
+            targetId = 'view-ctrl'; 
+            document.getElementById('breadcrumb').innerText = "Control"; 
+            updateSidebarHighlight('ctrl'); 
+            isMenuOpen = false;
+            updateMenuVisibility();
+            if(isCommActive) setTimeout(readSiteName, 200); // <--- LECTURA AL ENTRAR
+            break; 
+        
         // --- SLOTS (Con Lógica Independiente) ---
         case 'Slot1':
         case 'Slot2':
         case 'Slot3':
         case 'Slot4':
             targetId = 'view-slot-config';
-            loadSlotConfigUI(viewName); // <--- AQUÍ CARGAMOS LOS DATOS ESPECÍFICOS
+            loadSlotConfigUI(viewName);
             break;
 
-        case 'Diagnostics': targetId = 'view-default'; break; 
+        case 'Diagnostics': targetId = 'view-default'; break; // Placeholder
         default: document.getElementById('default-title').innerText = viewName;
     }
     showSection(targetId);
@@ -982,11 +996,7 @@ function updateConfigLocks() {
     }
 }
 
-// =========================================================
-// 8. LOGICA DE GESTIÓN DE SLOTS INDEPENDIENTES
-// =========================================================
-
-// "Base de datos" local para guardar la config de cada slot
+// LOGICA DE SLOTS INDEPENDIENTES
 const slotDataStore = {
     'Slot1': { name: 'Slot1', function: 'Disabled', address: 1, access: 'View Only', units: 'bpd, C, psi', map: 'None', baud: '57600', power: 'On' },
     'Slot2': { name: 'Slot2', function: 'Disabled', address: 1, access: 'View Only', units: 'bpd, C, psi', map: 'None', baud: '57600', power: 'On' },
@@ -994,13 +1004,11 @@ const slotDataStore = {
     'Slot4': { name: 'Slot4', function: 'Disabled', address: 1, access: 'View Only', units: 'bpd, C, psi', map: 'None', baud: '57600', power: 'On' }
 };
 
-let currentActiveSlot = null; // Variable para saber en qué slot estamos
+let currentActiveSlot = null;
 
 function loadSlotConfigUI(slotName) {
-    currentActiveSlot = slotName; // Ejemplo: 'Slot1'
+    currentActiveSlot = slotName;
     const data = slotDataStore[slotName];
-
-    // Cargar valores del objeto al HTML
     if (data) {
         document.getElementById('slot-cfg-name').value = data.name;
         document.getElementById('slot-cfg-function').value = data.function;
@@ -1013,7 +1021,6 @@ function loadSlotConfigUI(slotName) {
     }
 }
 
-// Función llamada por el evento onchange en el HTML
 function updateSlotData(field, value) {
     if (currentActiveSlot && slotDataStore[currentActiveSlot]) {
         slotDataStore[currentActiveSlot][field] = value;
@@ -1021,12 +1028,7 @@ function updateSlotData(field, value) {
     }
 }
 
-
-
-
-
-
-
+// INICIALIZACIÓN
 function init() {
     menuData.forEach((item, index) => {
         let li = document.createElement('li');
@@ -1049,6 +1051,7 @@ function init() {
 
 init();
 
+// CHART: Actualización de tasa de muestreo
 function updateSamplingRate() {
     const select = document.getElementById('chart-sampling-select');
     chartPollingRate = parseInt(select.value);
@@ -1144,13 +1147,8 @@ function addGroupByLabel(groupLabel) {
     }
 }
 
-function addDHTGroup() {
-    addGroupByLabel("Down Hole Tool");
-}
-
-function addVSDGroup() {
-    addGroupByLabel("Variable Speed Drive");
-}
+function addDHTGroup() { addGroupByLabel("Down Hole Tool"); }
+function addVSDGroup() { addGroupByLabel("Variable Speed Drive"); }
 
 function selectChartItem(element) {
     const list = document.getElementById('chart-added-list');
@@ -1469,71 +1467,47 @@ function writeTargetSpeed() {
     .catch(err => alert("Comm Error: " + err));
 }
 
-
-
-// Función START actualizada: Envía 2 pulsos (ON-OFF-ON-OFF)
+// Función START: 2 pulsos (ON-OFF-ON-OFF) SIN animación visual
 async function startVSD() {
     if (!isCommActive) return alert("System disconnected. Please connect first.");
     
-    if (!confirm("Are you sure you want to START the VSD? (Sending 2 Pulses)")) return;
+    // Confirmación simple
+    if (!confirm("Are you sure you want to START the VSD?")) return;
 
     // Helper para esperar (delay)
     const delay = ms => new Promise(res => setTimeout(res, ms));
     
     // Helper para escribir a la bobina de arranque
     const sendStartSignal = async (val) => {
-        const response = await fetch('/api/write', {
+        await fetch('/api/write', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ id: 'vsd_remote_start', value: val })
         });
-        return response.json();
     };
 
-    // Referencia al botón para feedback visual
-    const btn = document.querySelector('.btn-start');
-    const originalText = btn.innerHTML;
-
     try {
-        console.log("--- INICIANDO SECUENCIA DE ARRANQUE (2 PULSOS) ---");
+        console.log("--- INICIANDO SECUENCIA (2 PULSOS) ---");
         
         // --- PULSO 1 ---
-        btn.innerHTML = '<span class="btn-icon">⏳</span> PULSE 1...';
-        console.log("Pulse 1: HIGH (1)");
-        await sendStartSignal(1);
+        await sendStartSignal(1); // ON
+        await delay(500);         // Espera
+        await sendStartSignal(0); // OFF
         
-        await delay(500); // 500ms encendido
-        
-        console.log("Pulse 1: LOW (0)");
-        await sendStartSignal(0);
-        
-        await delay(500); // 500ms espera entre pulsos
+        await delay(500);         // Pausa entre pulsos
 
         // --- PULSO 2 ---
-        btn.innerHTML = '<span class="btn-icon">⏳</span> PULSE 2...';
-        console.log("Pulse 2: HIGH (1)");
-        await sendStartSignal(1);
-        
-        await delay(500); // 500ms encendido
-        
-        console.log("Pulse 2: LOW (0)");
-        await sendStartSignal(0);
+        await sendStartSignal(1); // ON
+        await delay(500);         // Espera
+        await sendStartSignal(0); // OFF
 
-        // --- FINALIZADO ---
-        console.log("--- SECUENCIA COMPLETADA ---");
-        btn.innerHTML = originalText;
-        alert("Start command (2 pulses) sent successfully.");
-
+        console.log("--- SECUENCIA ENVIADA ---");
+        
     } catch (err) {
         console.error(err);
-        btn.innerHTML = originalText;
-        alert("Error during start sequence: " + err);
+        alert("Communication Error during start: " + err);
     }
 }
-
-
-
-
 
 function stopVSD() {
     if (!isCommActive) return alert("System disconnected.");
@@ -1556,7 +1530,6 @@ function stopVSD() {
     })
     .catch(err => alert("Communication Error: " + err));
 }
-
 
 // Función genérica para escribir valores desde Inputs
 function writeGeneric(suffix, value) {
@@ -1586,6 +1559,95 @@ function writeGeneric(suffix, value) {
             }
         } else {
             alert("Error writing: " + (data.error || "Unknown"));
+        }
+    })
+    .catch(err => alert("Comm Error: " + err));
+}
+
+// =========================================================
+// GESTIÓN DE SITE NAME (ASCII TEXT)
+// =========================================================
+
+function readSiteName() {
+    if (!isCommActive) return;
+    
+    const elConfig = document.getElementById('input-site-name');
+    const elCtrl = document.getElementById('ui-site-name');
+
+    if(elConfig) elConfig.placeholder = "Reading...";
+    if(elCtrl) elCtrl.placeholder = "Reading...";
+
+    fetch('/api/site_name')
+    .then(r => r.json())
+    .then(data => {
+        if(data.status === 'success') {
+            if(elConfig) elConfig.value = data.name;
+            if(elCtrl) elCtrl.value = data.name;
+            console.log("Site Name Read:", data.name);
+        } else {
+            console.error("Error reading name:", data.error);
+            if(elConfig) elConfig.value = "Error";
+            if(elCtrl) elCtrl.value = "Error";
+        }
+    })
+    .catch(err => console.error("API Error:", err));
+}
+
+function writeSiteName() {
+    if (!isCommActive) return alert("Please connect first.");
+    
+    const inputEl = document.getElementById('input-site-name');
+    const newName = inputEl.value;
+
+    fetch('/api/site_name', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name: newName })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.status === 'success') {
+            alert("Site Name updated successfully!");
+            // Feedback visual verde
+            inputEl.style.backgroundColor = "#dcedc8";
+            setTimeout(() => inputEl.style.backgroundColor = "", 1000);
+            
+            // Sincronizar también el otro input si existe
+            const elCtrl = document.getElementById('ui-site-name');
+            if(elCtrl) elCtrl.value = newName;
+        } else {
+            alert("Error writing name: " + data.error);
+        }
+    })
+    .catch(err => alert("Comm Error: " + err));
+}
+
+// Nueva función para escribir desde la pestaña CONTROL (On Change)
+function writeSiteNameFromCtrl(value) {
+    if (!isCommActive) return alert("Please connect first.");
+    
+    fetch('/api/site_name', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name: value })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.status === 'success') {
+            console.log("Site Name updated from Ctrl view.");
+            // Sincronizar el input de configuración
+            const elConfig = document.getElementById('input-site-name');
+            if(elConfig) elConfig.value = value;
+            
+            // Feedback visual
+            const elCtrl = document.getElementById('ui-site-name');
+            if(elCtrl) {
+                const originalBg = elCtrl.style.backgroundColor;
+                elCtrl.style.backgroundColor = "#dcedc8";
+                setTimeout(() => elCtrl.style.backgroundColor = originalBg, 1000);
+            }
+        } else {
+            alert("Error writing name: " + data.error);
         }
     })
     .catch(err => alert("Comm Error: " + err));
