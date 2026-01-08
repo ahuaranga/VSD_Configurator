@@ -3,6 +3,7 @@ import sys
 import webbrowser
 import sqlite3
 import serial.tools.list_ports
+import inspect  # <--- NUEVO: Para auto-detectar el argumento correcto
 from threading import Timer, Lock
 from flask import Flask, render_template, url_for, jsonify, request
 import logging
@@ -56,7 +57,7 @@ def get_ports():
     return jsonify(ports_data)
 
 # -------------------------------------------------------------------------
-# 2. CLASE WRAPPER DEFINITIVA (Soporte Coil vs Register + Site Name)
+# 2. CLASE WRAPPER DEFINITIVA (Con Auto-Detección de Argumentos)
 # -------------------------------------------------------------------------
 class VSDInstrument:
     def __init__(self, config):
@@ -64,7 +65,8 @@ class VSDInstrument:
         self.config = config
         self.client = None
         self.slave_id = 1
-        self.id_arg_name = 'device_id' # Según diagnóstico previo (Pymodbus v3.11.4)
+        # Valor inicial seguro (se ajustará dinámicamente al conectar)
+        self.id_arg_name = 'slave' 
 
     def connect(self):
         if self.mode == 'serial':
@@ -95,30 +97,49 @@ class VSDInstrument:
         else:
             raise Exception(f"Modo desconocido: {self.mode}")
 
+        # Intentar conectar
         if not self.client.connect():
             raise Exception(f"Fallo al conectar ({self.mode}).")
+
+        # --- DETECCIÓN INTELIGENTE DE ARGUMENTO ---
+        # Esto soluciona el conflicto TCP vs Serial en Pymodbus 3.11.4
+        try:
+            # Inspeccionamos qué argumentos acepta la función de lectura del cliente actual
+            sig = inspect.signature(self.client.read_holding_registers)
+            params = list(sig.parameters.keys())
+            
+            if 'device_id' in params:
+                self.id_arg_name = 'device_id' # Típico en Serial v3.11.4
+            elif 'slave' in params:
+                self.id_arg_name = 'slave'     # Típico en TCP v3.x
+            elif 'unit' in params:
+                self.id_arg_name = 'unit'      # Típico en v2.x
+            else:
+                self.id_arg_name = 'slave'     # Default
+                
+            print(f"DEBUG: Cliente {self.mode} configurado con argumento ID: '{self.id_arg_name}'")
+            
+        except Exception as e:
+            print(f"WARNING: Fallo inspección dinámica ({e}). Usando 'slave' por defecto.")
+            self.id_arg_name = 'slave'
 
     def close(self):
         if self.client:
             self.client.close()
 
     def read_register(self, address, decimals=0, reg_type='uint'):
-        """
-        Lee datos según el tipo (coil o registro numérico).
-        """
         if not self.client:
             raise Exception("Cliente no conectado")
 
+        # Usamos el argumento detectado dinámicamente
         kwargs = {self.id_arg_name: self.slave_id}
         
         if reg_type == 'coil':
-            # Leer Bobina (Coil - FC01)
             rr = self.client.read_coils(address=address, count=1, **kwargs)
             if rr.isError():
                 raise Exception(f"Error Modbus (Lectura Coil): {rr}")
             return 1 if rr.bits[0] else 0
         else:
-            # Leer Registro (Holding Register - FC03)
             rr = self.client.read_holding_registers(address=address, count=1, **kwargs)
             if rr.isError():
                 raise Exception(f"Error Modbus (Lectura Reg): {rr}")
@@ -128,78 +149,63 @@ class VSDInstrument:
             return raw_val
 
     def write_register(self, address, value, decimals=0, reg_type='uint'):
-        """
-        Escribe datos según el tipo.
-        Si es 'coil', usa write_coil (FC05).
-        Si es 'uint', usa write_registers (FC16).
-        """
         if not self.client:
             raise Exception("Cliente no conectado")
 
         kwargs = {self.id_arg_name: self.slave_id}
 
         if reg_type == 'coil':
-            # Escribir Bobina (FC05)
-            # Convertimos valor a Booleano (1 -> True, 0 -> False)
             bool_val = True if value > 0 else False
             wr = self.client.write_coil(address=address, value=bool_val, **kwargs)
             if wr.isError():
                 raise Exception(f"Error Modbus (Escritura Coil): {wr}")
         else:
-            # Escribir Registro (FC16)
             raw_val = int(value * (10 ** decimals))
             raw_val = raw_val & 0xFFFF 
             wr = self.client.write_registers(address=address, values=[raw_val], **kwargs)
             if wr.isError():
                 raise Exception(f"Error Modbus (Escritura Reg): {wr}")
 
-    # --- NUEVA FUNCIONALIDAD: SITE NAME (ASCII) ---
+    # --- SITE NAME (ASCII) ---
     def read_site_name(self):
-        """Lee registros 1024-1028 y decodifica a ASCII (String)."""
+        """Lee registros 1024-1028 y decodifica a ASCII."""
         if not self.client:
             raise Exception("Cliente no conectado")
         
         kwargs = {self.id_arg_name: self.slave_id}
         
-        # Leemos 5 registros (10 caracteres)
         rr = self.client.read_holding_registers(address=1024, count=5, **kwargs)
         if rr.isError():
             raise Exception(f"Error leyendo Site Name: {rr}")
         
         decoded_name = ""
         for reg in rr.registers:
-            # Extraer byte alto y bajo
             char_hi = chr((reg >> 8) & 0xFF)
             char_lo = chr(reg & 0xFF)
             decoded_name += char_hi + char_lo
             
-        # Limpiar caracteres nulos
         return decoded_name.rstrip('\0')
 
     def write_site_name(self, name_str):
-        """Codifica String a ASCII y escribe en registros 1024-1028."""
+        """Codifica String a ASCII y escribe."""
         if not self.client:
             raise Exception("Cliente no conectado")
             
-        # Asegurar longitud exacta de 10 caracteres, rellenar con nulos
         name = name_str[:10].ljust(10, '\0')
         regs = []
-        
-        # Codificar en pares de bytes (High/Low)
         for i in range(0, 10, 2):
             val = (ord(name[i]) << 8) | ord(name[i+1])
             regs.append(val)
             
         kwargs = {self.id_arg_name: self.slave_id}
         
-        # Usar Write Registers (FC16)
         wr = self.client.write_registers(address=1024, values=regs, **kwargs)
         if wr.isError():
             raise Exception(f"Error escribiendo Site Name: {wr}")
 
 
 # -------------------------------------------------------------------------
-# 3. LÓGICA DE API (Rutas Flask)
+# 3. LÓGICA DE API
 # -------------------------------------------------------------------------
 
 @app.route('/api/connect', methods=['POST'])
@@ -215,7 +221,7 @@ def connect_instrument():
         try:
             instrument = VSDInstrument(data)
             instrument.connect()
-            # Prueba de lectura (Health Check)
+            # Health Check (Lectura de prueba para confirmar conexión)
             instrument.read_register(855, 0)
             return jsonify({"status": "success", "message": "Conectado"})
         except Exception as e:
@@ -254,7 +260,6 @@ def write_register_endpoint():
     with modbus_lock:
         try:
             scale = reg_def.get('scale', 1)
-            # Determinamos tipo (coil o uint)
             rtype = reg_def.get('type', 'uint')
             
             decimals = 0
@@ -262,7 +267,6 @@ def write_register_endpoint():
             elif scale == 100: decimals = 2
             elif scale == 1000: decimals = 3
             
-            # Pasamos rtype a la función de escritura
             instrument.write_register(reg_def['address'], user_value, decimals=decimals, reg_type=rtype)
             
             return jsonify({"status": "success", "written": user_value})
@@ -290,7 +294,6 @@ def read_batch():
                     elif scale == 100: decimals = 2
                     elif scale == 1000: decimals = 3
                     
-                    # Pasamos rtype a la función de lectura
                     real_val = instrument.read_register(reg_def['address'], decimals=decimals, reg_type=rtype)
                     results[reg_id] = real_val
                     success_count += 1
@@ -301,7 +304,6 @@ def read_batch():
         return jsonify({"error": "Device unresponsive"}), 500
     return jsonify(results)
 
-# --- NUEVA RUTA PARA SITE NAME ---
 @app.route('/api/site_name', methods=['GET', 'POST'])
 def handle_site_name():
     global instrument
